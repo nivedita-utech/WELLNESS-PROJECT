@@ -46,6 +46,10 @@ export const updateUser = async (req, res) => {
       user.wellnessLevel = req.body.wellnessLevel || user.wellnessLevel;
       user.franchiseId = req.body.franchiseId !== undefined ? req.body.franchiseId : user.franchiseId;
 
+      if (req.body.password) {
+        user.password = req.body.password;
+      }
+
       const updatedUser = await user.save();
       res.json({
         _id: updatedUser._id,

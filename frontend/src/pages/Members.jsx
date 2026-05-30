@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { Plus, X, User as UserIcon, Mail, Shield, Trash2 } from 'lucide-react';
+import { Plus, X, User as UserIcon, Mail, Shield, Trash2, Edit } from 'lucide-react';
 
 const Members = () => {
   const { authFetch, user: currentUser } = useContext(AuthContext);
@@ -17,6 +17,18 @@ const Members = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    _id: '',
+    name: '',
+    email: '',
+    password: '',
+    role: '',
+    status: ''
+  });
+  const [editing, setEditing] = useState(false);
+  const [editFormError, setEditFormError] = useState(null);
 
   useEffect(() => {
     fetchMembers();
@@ -44,6 +56,24 @@ const Members = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const openEditModal = (member) => {
+    setEditFormData({
+      _id: member._id,
+      name: member.name,
+      email: member.email,
+      password: '',
+      role: member.role,
+      status: member.status || 'Active'
+    });
+    setEditFormError(null);
+    setIsEditModalOpen(true);
   };
 
   const handleSubmit = async (e) => {
@@ -84,6 +114,42 @@ const Members = () => {
       }
     } catch (err) {
       alert(err.message);
+    }
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setEditing(true);
+    setEditFormError(null);
+    try {
+      const payload = {
+        name: editFormData.name,
+        email: editFormData.email,
+        role: editFormData.role,
+        status: editFormData.status
+      };
+      
+      if (editFormData.password) {
+        payload.password = editFormData.password;
+      }
+
+      const res = await authFetch(`/api/users/${editFormData._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        setIsEditModalOpen(false);
+        fetchMembers();
+      } else {
+        setEditFormError(data.message || 'Failed to update member');
+      }
+    } catch (err) {
+      setEditFormError(err.message);
+    } finally {
+      setEditing(false);
     }
   };
 
@@ -154,16 +220,27 @@ const Members = () => {
                         {member.status || 'Active'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right">
-                      {currentUser?.role === 'admin' && currentUser?._id !== member._id && (
-                        <button 
-                          onClick={() => handleDelete(member._id)}
-                          className="text-red-500 hover:text-red-700 p-1 rounded-md hover:bg-red-50 transition-colors"
-                          title="Delete Member"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
+                    <td className="py-3 px-4">
+                      <div className="flex justify-end gap-2">
+                        {currentUser?.role === 'admin' && (
+                          <button 
+                            onClick={() => openEditModal(member)}
+                            className="text-blue-500 hover:text-blue-700 p-1 rounded-md hover:bg-blue-50 transition-colors"
+                            title="Edit Member"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        )}
+                        {currentUser?.role === 'admin' && currentUser?._id !== member._id && (
+                          <button 
+                            onClick={() => handleDelete(member._id)}
+                            className="text-red-500 hover:text-red-700 p-1 rounded-md hover:bg-red-50 transition-colors"
+                            title="Delete Member"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -276,6 +353,128 @@ const Members = () => {
                   className="px-4 py-2 bg-brand-teal text-white rounded-lg font-medium hover:bg-brand-teal/90 transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Adding...' : 'Add Member'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-800">Edit Member</h2>
+              <button 
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              {editFormError && (
+                <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">
+                  {editFormError}
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <UserIcon className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input
+                    type="text"
+                    name="name"
+                    required
+                    value={editFormData.name}
+                    onChange={handleEditInputChange}
+                    className="pl-10 w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-teal focus:border-transparent transition-all outline-none"
+                    placeholder="John Doe"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    value={editFormData.email}
+                    onChange={handleEditInputChange}
+                    className="pl-10 w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-teal focus:border-transparent transition-all outline-none"
+                    placeholder="john@example.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Password (Leave blank to keep current)</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Shield className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input
+                    type="password"
+                    name="password"
+                    value={editFormData.password}
+                    onChange={handleEditInputChange}
+                    className="pl-10 w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-teal focus:border-transparent transition-all outline-none"
+                    placeholder="Enter new password"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                <select
+                  name="role"
+                  value={editFormData.role}
+                  onChange={handleEditInputChange}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-teal focus:border-transparent transition-all outline-none bg-white"
+                >
+                  <option value="user">User</option>
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
+                  <option value="franchise">Franchise Owner</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                <select
+                  name="status"
+                  value={editFormData.status}
+                  onChange={handleEditInputChange}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-teal focus:border-transparent transition-all outline-none bg-white"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editing}
+                  className="px-4 py-2 bg-brand-teal text-white rounded-lg font-medium hover:bg-brand-teal/90 transition-colors disabled:opacity-50"
+                >
+                  {editing ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>
