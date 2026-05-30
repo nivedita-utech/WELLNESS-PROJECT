@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AURA - Database Seed Tool</title>
+  <style>
+    body { background: #09090b; color: #f8fafc; font-family: 'Courier New', monospace; padding: 2rem; max-width: 700px; margin: 0 auto; }
+    h1 { color: #10b981; }
+    .log { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 8px; padding: 1rem; margin: 1rem 0; height: 300px; overflow-y: auto; font-size: 0.85rem; }
+    .log p { margin: 0.2rem 0; }
+    .ok { color: #10b981; }
+    .err { color: #ef4444; }
+    .info { color: #94a3b8; }
+    .warn { color: #f59e0b; }
+    button { background: #10b981; color: white; border: none; padding: 0.75rem 2rem; border-radius: 8px; font-size: 1rem; cursor: pointer; margin: 0.5rem 0.5rem 0.5rem 0; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.danger { background: #ef4444; }
+    .credentials { background: #1a1a24; border: 1px solid #10b981; border-radius: 8px; padding: 1rem; margin: 1rem 0; display: none; }
+    .cred-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #2a2a3a; font-size: 0.9rem; }
+    a { color: #10b981; }
+  </style>
+</head>
+<body>
+  <h1>⚡ AURA Database Seeder</h1>
+  <p style="color: #94a3b8;">Use the buttons below to seed or clear demo accounts.</p>
+
+  <button id="seedBtn" onclick="runSeed()">🌱 Force Re-Seed (Clean All &amp; Recreate)</button>
+  
+  <div class="log" id="log">
+    <p class="info">Ready. Click the button above to begin.</p>
+  </div>
+
+  <div class="credentials" id="credDiv">
+    <h3 style="color: #10b981; margin-top: 0;">✅ Seeding Complete! Login Credentials:</h3>
+    <div class="cred-row"><span>👑 Admin</span><strong>admin@wellness.com / admin123</strong></div>
+    <div class="cred-row"><span>🏢 Franchise</span><strong>franchise1@wellness.com / franchise123</strong></div>
+    <div class="cred-row"><span>👨‍⚕️ Staff</span><strong>staff1@wellness.com / staff123</strong></div>
+    <div class="cred-row"><span>🧑‍💪 Client 1</span><strong>client1@wellness.com / client123</strong></div>
+    <div class="cred-row"><span>🧑‍💪 Client 2</span><strong>client2@wellness.com / client123</strong></div>
+    <br>
+    <a href="http://localhost:3000/login" target="_blank">→ Open Login Page</a>
+  </div>
+
+  <script>
+    const API = 'http://localhost:5000/api';
+    const logEl = document.getElementById('log');
+
+    function log(msg, type = 'info') {
+      const p = document.createElement('p');
+      p.className = type;
+      p.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      logEl.appendChild(p);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Call the backend /api/seed endpoint which wipes and re-creates everything
+    async function runSeed() {
+      document.getElementById('seedBtn').disabled = true;
+      document.getElementById('credDiv').style.display = 'none';
+      logEl.innerHTML = '';
+      log('🔄 Calling /api/seed to wipe and recreate all demo data...', 'info');
+
+      try {
+        const res = await fetch(`${API}/seed`);
+        const data = await res.json();
+
+        if (data.success) {
+          log('✅ ' + data.message, 'ok');
+          log('---', 'info');
+          log('👑 Admin:     admin@wellness.com / admin123', 'ok');
+          log('🏢 Franchise: franchise1@wellness.com / franchise123', 'ok');
+          log('👨‍⚕️ Staff:    staff1@wellness.com / staff123', 'ok');
+          log('🧑‍💪 Client 1: client1@wellness.com / client123', 'ok');
+          log('🧑‍💪 Client 2: client2@wellness.com / client123', 'ok');
+          document.getElementById('credDiv').style.display = 'block';
+        } else {
+          log('❌ Seed failed: ' + data.message, 'err');
+          log('Trying fallback: registering users one by one...', 'warn');
+          await fallbackRegister();
+        }
+      } catch (e) {
+        log('❌ Could not reach /api/seed: ' + e.message, 'err');
+        log('Trying fallback: registering users one by one...', 'warn');
+        await fallbackRegister();
+      }
+
+      document.getElementById('seedBtn').disabled = false;
+    }
+
+    // Fallback: register each user individually
+    async function fallbackRegister() {
+      const users = [
+        { name: 'Dr. Evelyn Carter',        email: 'admin@wellness.com',       password: 'admin123',       role: 'admin' },
+        { name: 'Gym-Nexus Franchise East',  email: 'franchise1@wellness.com',  password: 'franchise123',   role: 'franchise' },
+        { name: 'Vigor-Wellness West',       email: 'franchise2@wellness.com',  password: 'franchise123',   role: 'franchise' },
+        { name: 'Coach Marcus Vance',        email: 'staff1@wellness.com',      password: 'staff123',       role: 'staff' },
+        { name: 'Rohan Sharma',              email: 'client1@wellness.com',     password: 'client123',      role: 'user' },
+        { name: 'Aanya Patel',              email: 'client2@wellness.com',     password: 'client123',      role: 'user' },
+      ];
+
+      for (const u of users) {
+        try {
+          const res = await fetch(`${API}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(u)
+          });
+          const json = await res.json();
+          if (res.ok) {
+            log(`✅ Registered: ${u.name} (${u.role})`, 'ok');
+          } else {
+            log(`⚠️ ${u.name}: ${json.message}`, 'warn');
+          }
+        } catch (e) {
+          log(`❌ Error: ${e.message}`, 'err');
+        }
+      }
+
+      log('Done. If users "already exist", they were created earlier.', 'info');
+      log('If login still fails, the /api/seed clean wipe is needed.', 'warn');
+      document.getElementById('credDiv').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
