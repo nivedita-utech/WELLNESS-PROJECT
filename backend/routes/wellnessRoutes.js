@@ -1,5 +1,5 @@
 import express from 'express';
-import { getWorkouts, getDailyLog, saveDailyLog, getTransformations, addTransformation, getQuote, getRecommendations, addWorkout, deleteWorkout } from '../controllers/wellnessController.js';
+import { getWorkouts, getDailyLog, saveDailyLog, getTransformations, addTransformation, getQuote, getRecommendations, addWorkout, deleteWorkout, getAnalyticsGraphs } from '../controllers/wellnessController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { upload } from '../middlewares/uploadMiddleware.js';
 
@@ -10,6 +10,9 @@ router.get('/quote', protect, getQuote);
 
 // Personalized Recommendations based on health data
 router.get('/recommendations', protect, getRecommendations);
+
+// User Analytics & Graphs
+router.get('/analytics/graphs', protect, getAnalyticsGraphs);
 
 // Workout Videos
 router.get('/workouts', protect, getWorkouts);

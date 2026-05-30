@@ -18,8 +18,10 @@ import {
   User,
   Users,
   Moon,
-  Compass as CalmIcon
+  Compass as CalmIcon,
+  CheckCircle2
 } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
 const UserDashboard = () => {
   const { user, authFetch, updateProfileLocal } = useContext(AuthContext);
@@ -37,6 +39,9 @@ const UserDashboard = () => {
   // Dynamic quote & personalized recommendations
   const [quote, setQuote] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
+  
+  // Analytics graphs
+  const [graphData, setGraphData] = useState(null);
   
   // Hydration state
   const [tempWater, setTempWater] = useState(0);
@@ -82,6 +87,7 @@ const UserDashboard = () => {
     fetchFeed();
     fetchQuote();
     fetchRecommendations();
+    fetchGraphData();
   }, [date]);
 
   const fetchQuote = async () => {
@@ -99,6 +105,16 @@ const UserDashboard = () => {
       const res = await authFetch('/api/wellness/recommendations');
       const data = await res.json();
       setRecommendations(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchGraphData = async () => {
+    try {
+      const res = await authFetch('/api/wellness/analytics/graphs');
+      const data = await res.json();
+      setGraphData(data);
     } catch (err) {
       console.error(err);
     }
@@ -406,87 +422,99 @@ const UserDashboard = () => {
     ? workouts
     : workouts.filter(w => w.category === videoCategory);
 
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: Activity },
+    { id: 'nutrition', label: 'Nutrition & Water', icon: Flame },
+    { id: 'workouts', label: 'Workout Streaming', icon: Tv },
+    { id: 'transformation', label: 'Transformation', icon: Camera },
+    { id: 'healthdocs', label: 'Health Locker', icon: FileText },
+    { id: 'community', label: 'Social & Leaderboard', icon: Users },
+    { id: 'analytics', label: 'Analytics & Graphs', icon: TrendingUp },
+  ];
+
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '1.5rem' }}>
+    <div className="space-y-6">
       
       {/* Upper Quick Metrics Header */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', background: 'var(--bg-secondary)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div className="progress-ring-section">
-            <Calendar size={18} color="var(--accent-emerald)" />
+      <div className="glass-card flex flex-wrap gap-4 justify-between items-center mb-6">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-slate-100/50 px-3 py-2 rounded-xl border border-slate-200">
+            <Calendar size={18} className="text-brand-teal" />
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="form-control"
-              style={{ padding: '0.4rem 0.8rem', background: 'var(--bg-primary)', fontSize: '0.85rem' }}
+              className="bg-transparent text-sm font-medium text-slate-700 focus:outline-none"
             />
           </div>
         </div>
         
-        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Aura Score</p>
-            <h3 style={{ color: aiInsights?.riskIndicator === 'Green' ? 'var(--status-green)' : aiInsights?.riskIndicator === 'Yellow' ? 'var(--status-yellow)' : 'var(--status-red)' }}>
+        <div className="flex gap-6 sm:gap-8 flex-wrap">
+          <div className="text-center">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Aura Score</p>
+            <h3 className={`text-xl font-bold ${aiInsights?.riskIndicator === 'Green' ? 'text-emerald-500' : aiInsights?.riskIndicator === 'Yellow' ? 'text-orange-500' : 'text-red-500'}`}>
               {aiInsights?.healthScore || 70}/100
             </h3>
           </div>
-          <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', paddingLeft: '1.5rem' }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Wellness Level</p>
-            <span className="status-pill status-green-tag" style={{ marginTop: '0.2rem' }}>{user.wellnessLevel}</span>
+          <div className="text-center pl-6 sm:pl-8 border-l border-slate-200">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Wellness Level</p>
+            <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-sky/10 text-brand-sky">
+              {user.wellnessLevel}
+            </span>
           </div>
-          <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', paddingLeft: '1.5rem' }}>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Ecosystem Points</p>
-            <h3 style={{ color: 'var(--accent-gold)' }}>{user.points} XP</h3>
+          <div className="text-center pl-6 sm:pl-8 border-l border-slate-200">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Ecosystem Points</p>
+            <h3 className="text-xl font-bold text-amber-500">{user.points} XP</h3>
           </div>
         </div>
       </div>
 
       {/* Primary Dashboard Navigation Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-        <button onClick={() => setSelectedTab('overview')} className={`btn ${selectedTab === 'overview' ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-          <Activity size={16} /> Overview
-        </button>
-        <button onClick={() => setSelectedTab('nutrition')} className={`btn ${selectedTab === 'nutrition' ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-          <Flame size={16} /> Nutrition & Water
-        </button>
-        <button onClick={() => setSelectedTab('workouts')} className={`btn ${selectedTab === 'workouts' ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-          <Tv size={16} /> Workout Streaming
-        </button>
-        <button onClick={() => setSelectedTab('transformation')} className={`btn ${selectedTab === 'transformation' ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-          <Camera size={16} /> Transformation
-        </button>
-        <button onClick={() => setSelectedTab('healthdocs')} className={`btn ${selectedTab === 'healthdocs' ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-          <FileText size={16} /> Health Locker
-        </button>
-        <button onClick={() => setSelectedTab('community')} className={`btn ${selectedTab === 'community' ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-          <Users size={16} /> Social & Leaderboard
-        </button>
+      <div className="flex space-x-1 bg-slate-200/50 p-1 rounded-xl w-full overflow-x-auto">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setSelectedTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                selectedTab === tab.id 
+                  ? 'bg-white text-brand-teal shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+              }`}
+            >
+              <Icon size={16} />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* DASHBOARD TAB CONTENTS */}
       
       {/* 1. OVERVIEW TAB */}
       {selectedTab === 'overview' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">
           
           {/* Digital Membership ID Card */}
-          <div className="card membership-card" style={{ gridColumn: 'span 4' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+          <div className="glass-card lg:col-span-4 premium-gradient text-white relative overflow-hidden group">
+            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="flex justify-between items-start mb-6 relative z-10">
               <div>
-                <p style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-secondary)' }}>Ecosystem Identity</p>
-                <h3 style={{ margin: '0.2rem 0' }}>{user.name}</h3>
-                <code style={{ fontSize: '0.8rem', color: 'var(--accent-emerald)' }}>ID: {user.membershipId}</code>
+                <p className="text-xs font-medium uppercase tracking-widest text-white/70 mb-1">Ecosystem Identity</p>
+                <h3 className="text-2xl font-bold text-white tracking-tight">{user.name}</h3>
+                <code className="text-xs font-mono text-white/80 mt-1 block">ID: {user.membershipId}</code>
               </div>
-              <span className="status-pill status-green-tag">ACTIVE MEMBER</span>
+              <span className="inline-flex px-2 py-1 rounded bg-white/20 text-white text-[10px] font-bold tracking-wider backdrop-blur-sm">
+                ACTIVE MEMBER
+              </span>
             </div>
             
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1rem' }}>
-              {/* Dynamic QR Code — encodes membershipId as a grid pattern using modular arithmetic */}
-              <div className="qr-placeholder">
-                <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
+            <div className="flex gap-4 items-center mt-6 relative z-10 bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/20">
+              {/* Dynamic QR Code */}
+              <div className="w-20 h-20 bg-white p-1 rounded-lg shadow-sm shrink-0">
+                <svg viewBox="0 0 100 100" className="w-full h-full">
                   <rect width="100" height="100" fill="white" />
-                  {/* Position Detection Patterns */}
                   <rect x="5" y="5" width="25" height="25" fill="black" />
                   <rect x="8" y="8" width="19" height="19" fill="white" />
                   <rect x="11" y="11" width="13" height="13" fill="black" />
@@ -496,7 +524,6 @@ const UserDashboard = () => {
                   <rect x="5" y="70" width="25" height="25" fill="black" />
                   <rect x="8" y="73" width="19" height="19" fill="white" />
                   <rect x="11" y="76" width="13" height="13" fill="black" />
-                  {/* Data modules — encoded from membershipId character codes */}
                   {user.membershipId && Array.from(user.membershipId).map((char, i) => {
                     const code = char.charCodeAt(0);
                     const col = (code % 7) * 5 + 35;
@@ -505,186 +532,181 @@ const UserDashboard = () => {
                       <rect key={i} x={col} y={row} width="4" height="4" fill="black" />
                     );
                   })}
-                  {/* Extra data fill modules */}
                   {[38,43,48,53,58,38,48,58,43,53].map((x, i) => (
                     <rect key={`d${i}`} x={x} y={38 + (i % 3) * 10} width="4" height="4" fill="black" />
                   ))}
                 </svg>
               </div>
               <div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Level Tag</p>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff', border: '1px solid var(--accent-emerald)', padding: '0.2rem 0.6rem', borderRadius: '4px', display: 'inline-block', marginTop: '0.25rem' }}>
+                <p className="text-xs font-medium text-white/70 uppercase tracking-wider mb-1">Level Tag</p>
+                <div className="text-sm font-bold text-brand-teal bg-white px-3 py-1 rounded-lg inline-block shadow-sm">
                   {user.wellnessLevel}
                 </div>
-                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Scan QR at Franchise check-in</p>
+                <p className="text-[10px] text-white/60 mt-2 leading-tight">Scan QR at Franchise check-in</p>
               </div>
             </div>
           </div>
 
           {/* Daily Challenges */}
-          <div className="card" style={{ gridColumn: 'span 4' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-              <CheckSquare size={20} color="var(--accent-emerald)" />
+          <div className="glass-card lg:col-span-4">
+            <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+              <CheckSquare size={20} className="text-brand-teal" />
               Daily Challenges
             </h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Complete tasks to earn +10 points each.</p>
+            <p className="text-xs text-slate-500 mb-5">Complete tasks to earn +10 points each.</p>
             
-            <div className="checklist-item">
-              <div className={`checkbox-custom ${dailyLog?.challengesCompleted?.includes('water') ? 'checked' : ''}`}>
-                ✓
-              </div>
-              <div>
-                <p style={{ fontSize: '0.9rem', textDecoration: dailyLog?.challengesCompleted?.includes('water') ? 'line-through' : 'none' }}>Hydration Target (2.5L)</p>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{tempWater}ml / 2500ml logged</span>
-              </div>
-            </div>
-
-            <div className="checklist-item">
-              <div className={`checkbox-custom ${dailyLog?.challengesCompleted?.includes('steps') ? 'checked' : ''}`}>
-                ✓
-              </div>
-              <div>
-                <p style={{ fontSize: '0.9rem', textDecoration: dailyLog?.challengesCompleted?.includes('steps') ? 'line-through' : 'none' }}>Steps Target (10,000 steps)</p>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{dailyLog?.stepCount || 0} / 10000 steps</span>
-              </div>
-            </div>
-
-            <div className="checklist-item">
-              <div className={`checkbox-custom ${dailyLog?.challengesCompleted?.includes('sleep') ? 'checked' : ''}`}>
-                ✓
-              </div>
-              <div>
-                <p style={{ fontSize: '0.9rem', textDecoration: dailyLog?.challengesCompleted?.includes('sleep') ? 'line-through' : 'none' }}>Rest Target (7+ Hours)</p>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{dailyLog?.sleepHours || 0} hours logged</span>
-              </div>
-            </div>
-
-            <div className="checklist-item">
-              <div className={`checkbox-custom ${dailyLog?.challengesCompleted?.includes('meal') ? 'checked' : ''}`}>
-                ✓
-              </div>
-              <div>
-                <p style={{ fontSize: '0.9rem', textDecoration: dailyLog?.challengesCompleted?.includes('meal') ? 'line-through' : 'none' }}>Macro Logging Completion</p>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Log Breakfast, Lunch, and Dinner</span>
-              </div>
+            <div className="space-y-3">
+              {[
+                { key: 'water', label: 'Hydration Target (2.5L)', sub: `${tempWater}ml / 2500ml logged` },
+                { key: 'steps', label: 'Steps Target (10,000 steps)', sub: `${dailyLog?.stepCount || 0} / 10000 steps` },
+                { key: 'sleep', label: 'Rest Target (7+ Hours)', sub: `${dailyLog?.sleepHours || 0} hours logged` },
+                { key: 'meal', label: 'Macro Logging Completion', sub: 'Log Breakfast, Lunch, and Dinner' }
+              ].map((challenge) => {
+                const isCompleted = dailyLog?.challengesCompleted?.includes(challenge.key);
+                return (
+                  <div key={challenge.key} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-brand-teal/30 hover:bg-slate-50 transition-colors">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border transition-colors ${isCompleted ? 'bg-brand-teal border-brand-teal text-white' : 'bg-slate-100 border-slate-200 text-transparent'}`}>
+                      <CheckCircle2 size={14} />
+                    </div>
+                    <div>
+                      <p className={`text-sm font-medium ${isCompleted ? 'line-through text-slate-400' : 'text-slate-700'}`}>{challenge.label}</p>
+                      <span className="text-xs text-slate-500 block mt-0.5">{challenge.sub}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           {/* Gamified Achievements Badges */}
-          <div className="card" style={{ gridColumn: 'span 4' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-              <Award size={20} color="var(--accent-gold)" />
+          <div className="glass-card lg:col-span-4">
+            <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+              <Award size={20} className="text-amber-500" />
               Earned Achievements
             </h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Your digital reward recognition badges:</p>
-            <div className="badges-grid">
+            <p className="text-xs text-slate-500 mb-5">Your digital reward recognition badges:</p>
+            <div className="flex flex-wrap gap-2 mb-6">
               {user.badges && user.badges.map((badge, i) => (
-                <div key={i} className="badge-item">
+                <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 border border-amber-100 rounded-lg text-xs font-semibold">
                   <Award size={12} />
                   <span>{badge}</span>
                 </div>
               ))}
             </div>
 
-            <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-              <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Daily Motivation Quote</h4>
+            <div className="mt-auto border-t border-slate-100 pt-5">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Daily Motivation Quote</h4>
               {quote ? (
-                <>
-                  <p style={{ fontStyle: 'italic', fontSize: '0.8rem', marginTop: '0.5rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                    "{quote.text}"
-                  </p>
-                  <p style={{ fontSize: '0.7rem', color: 'var(--accent-emerald)', marginTop: '0.4rem', textAlign: 'right' }}>— {quote.author}</p>
-                </>
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 relative">
+                  <div className="absolute top-2 left-2 text-3xl text-brand-teal/20 font-serif leading-none">"</div>
+                  <p className="text-sm italic text-slate-600 relative z-10 pl-4">{quote.text}</p>
+                  <p className="text-xs font-medium text-brand-teal text-right mt-2">— {quote.author}</p>
+                </div>
               ) : (
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Loading today's quote...</p>
+                <p className="text-sm text-slate-400 italic">Loading today's quote...</p>
               )}
             </div>
           </div>
 
           {/* Health Score & AI Intelligence Report */}
-          <div className="card card-glowing-violet" style={{ gridColumn: 'span 8' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+          <div className="glass-card lg:col-span-8 border-l-4 border-l-brand-teal">
+            <div className="flex justify-between items-start mb-6">
               <div>
-                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Heart size={20} color="var(--accent-violet)" />
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-1">
+                  <Heart size={20} className="text-brand-teal" />
                   AI Health Intelligence Insights
                 </h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Generated comparison analysis between checkups</p>
+                <p className="text-xs text-slate-500">Generated comparison analysis between checkups</p>
               </div>
-              <span className={`status-pill ${aiInsights?.riskIndicator === 'Green' ? 'status-green-tag' : aiInsights?.riskIndicator === 'Yellow' ? 'status-yellow-tag' : 'status-red-tag'}`}>
-                Risk Level: {aiInsights?.riskIndicator || 'Normal'}
+              <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold tracking-wide ${aiInsights?.riskIndicator === 'Green' ? 'bg-emerald-100 text-emerald-700' : aiInsights?.riskIndicator === 'Yellow' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
+                Risk: {aiInsights?.riskIndicator || 'Normal'}
               </span>
             </div>
 
             {aiInsights?.comparisonAvailable ? (
-              <div className="ai-insight-box">
-                <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--accent-violet)' }}>Trending Parameters Summary:</h4>
-                <ul style={{ paddingLeft: '1.25rem', fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: '1rem' }}>
-                  {aiInsights.insights.map((insight, idx) => (
-                    <li key={idx} style={{ marginBottom: '0.4rem' }}>{insight}</li>
-                  ))}
-                </ul>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                  <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    <TrendingUp size={16} className="text-brand-sky" /> Trending Parameters
+                  </h4>
+                  <ul className="space-y-2">
+                    {aiInsights.insights.map((insight, idx) => (
+                      <li key={idx} className="text-sm text-slate-600 flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand-sky shrink-0 mt-1.5"></span>
+                        {insight}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-                <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--accent-emerald)' }}>AI Actionable Coaching Advice:</h4>
-                <ul style={{ paddingLeft: '1.25rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  {aiInsights.recommendations.map((rec, idx) => (
-                    <li key={idx} style={{ marginBottom: '0.4rem' }}>{rec}</li>
-                  ))}
-                </ul>
+                <div className="bg-brand-teal/5 rounded-xl p-5 border border-brand-teal/10">
+                  <h4 className="text-sm font-bold text-brand-teal mb-3 flex items-center gap-2">
+                    <Activity size={16} /> Actionable Coaching
+                  </h4>
+                  <ul className="space-y-2">
+                    {aiInsights.recommendations.map((rec, idx) => (
+                      <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand-teal shrink-0 mt-1.5"></span>
+                        {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             ) : (
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                {aiInsights?.summary || 'No analysis logs available. Please ask coach to fill Body Analysis or Medical Reports.'}
-              </p>
+              <div className="bg-slate-50 rounded-xl p-6 text-center border border-slate-100 border-dashed">
+                <p className="text-sm text-slate-500">
+                  {aiInsights?.summary || 'No analysis logs available. Please ask coach to fill Body Analysis or Medical Reports.'}
+                </p>
+              </div>
             )}
           </div>
 
           {/* Quick Metrics Log Forms */}
-          <div className="card" style={{ gridColumn: 'span 4' }}>
-            <h3 style={{ marginBottom: '1rem' }}>Daily Habits Log</h3>
-            <div className="form-group">
-              <label className="form-label">Step Count</label>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input
-                  type="number"
-                  className="form-control"
-                  placeholder="e.g. 8000"
-                  value={dailyLog?.stepCount || ''}
-                  onChange={(e) => updateStepsSleep(Number(e.target.value), undefined, undefined)}
-                  style={{ flexGrow: 1 }}
-                />
-                <span className="btn btn-secondary" style={{ padding: '0.5rem' }}>steps</span>
+          <div className="glass-card lg:col-span-4">
+            <h3 className="text-lg font-bold text-slate-800 mb-5">Daily Habits Log</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Step Count</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all"
+                    placeholder="e.g. 8000"
+                    value={dailyLog?.stepCount || ''}
+                    onChange={(e) => updateStepsSleep(Number(e.target.value), undefined, undefined)}
+                  />
+                  <span className="inline-flex items-center justify-center px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-500 shrink-0">steps</span>
+                </div>
               </div>
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">Sleep (Hours)</label>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input
-                  type="number"
-                  step="0.5"
-                  className="form-control"
-                  placeholder="e.g. 7.5"
-                  value={dailyLog?.sleepHours || ''}
-                  onChange={(e) => updateStepsSleep(undefined, Number(e.target.value), undefined)}
-                  style={{ flexGrow: 1 }}
-                />
-                <span className="btn btn-secondary" style={{ padding: '0.5rem' }}>hours</span>
+              
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Sleep (Hours)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    step="0.5"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all"
+                    placeholder="e.g. 7.5"
+                    value={dailyLog?.sleepHours || ''}
+                    onChange={(e) => updateStepsSleep(undefined, Number(e.target.value), undefined)}
+                  />
+                  <span className="inline-flex items-center justify-center px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-500 shrink-0">hours</span>
+                </div>
               </div>
-            </div>
 
-            <div className="form-group">
-              <label className="form-label">Meditation (Minutes)</label>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input
-                  type="number"
-                  className="form-control"
-                  placeholder="e.g. 15"
-                  value={dailyLog?.meditationMinutes || ''}
-                  onChange={(e) => updateStepsSleep(undefined, undefined, Number(e.target.value))}
-                  style={{ flexGrow: 1 }}
-                />
-                <span className="btn btn-secondary" style={{ padding: '0.5rem' }}>mins</span>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Meditation (Minutes)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all"
+                    placeholder="e.g. 15"
+                    value={dailyLog?.meditationMinutes || ''}
+                    onChange={(e) => updateStepsSleep(undefined, undefined, Number(e.target.value))}
+                  />
+                  <span className="inline-flex items-center justify-center px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-500 shrink-0">mins</span>
+                </div>
               </div>
             </div>
           </div>
@@ -693,81 +715,101 @@ const UserDashboard = () => {
 
       {/* 2. NUTRITION & WATER TAB */}
       {selectedTab === 'nutrition' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">
           
           {/* Daily Tracker Rings */}
-          <div className="card" style={{ gridColumn: 'span 4' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-              <Droplet size={20} color="var(--accent-emerald)" />
+          <div className="glass-card lg:col-span-4">
+            <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+              <Droplet size={20} className="text-brand-sky" />
               Smart Water Hydration
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', padding: '1rem 0' }}>
-              <div style={{ textAlign: 'center' }}>
-                <h1 style={{ fontSize: '3rem', color: 'var(--accent-emerald)' }}>{tempWater} <span style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>ml</span></h1>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Goal: {dailyLog?.waterGoal || 2500} ml</p>
-              </div>
-              <div className="progress-track" style={{ height: '12px' }}>
-                <div className="progress-bar" style={{ width: `${Math.min(100, (tempWater / (dailyLog?.waterGoal || 2500)) * 100)}%` }}></div>
+            <div className="flex flex-col items-center">
+              <div className="relative w-48 h-48 flex items-center justify-center bg-brand-sky/5 rounded-full border-[8px] border-slate-50 mb-6 shadow-inner">
+                <div className="text-center z-10">
+                  <h1 className="text-4xl font-black text-brand-sky tracking-tighter">{tempWater}</h1>
+                  <span className="text-sm font-medium text-slate-500">ml / {dailyLog?.waterGoal || 2500}</span>
+                </div>
+                {/* SVG Progress Circle would go here natively, simulating with a colored ring overlay */}
+                <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+                   <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-brand-sky/20" />
+                   <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={`${Math.min(100, (tempWater / (dailyLog?.waterGoal || 2500)) * 100) * 5.5} 600`} className="text-brand-sky drop-shadow" strokeLinecap="round" />
+                </svg>
               </div>
               
-              <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
-                <button onClick={() => addWater(250)} className="btn btn-secondary" style={{ flexGrow: 1, padding: '0.5rem' }}>+250ml (Glass)</button>
-                <button onClick={() => addWater(500)} className="btn btn-secondary" style={{ flexGrow: 1, padding: '0.5rem' }}>+500ml (Bottle)</button>
-                <button onClick={() => addWater(1000)} className="btn btn-secondary" style={{ flexGrow: 1, padding: '0.5rem' }}>+1.0L (Shaker)</button>
+              <div className="grid grid-cols-3 gap-2 w-full mb-4">
+                <button onClick={() => addWater(250)} className="bg-slate-50 hover:bg-brand-sky/10 text-slate-600 hover:text-brand-sky border border-slate-200 rounded-xl py-3 text-xs font-semibold transition-colors flex flex-col items-center gap-1">
+                  <Droplet size={14} /> +250ml
+                </button>
+                <button onClick={() => addWater(500)} className="bg-slate-50 hover:bg-brand-sky/10 text-slate-600 hover:text-brand-sky border border-slate-200 rounded-xl py-3 text-xs font-semibold transition-colors flex flex-col items-center gap-1">
+                  <Droplet size={16} /> +500ml
+                </button>
+                <button onClick={() => addWater(1000)} className="bg-slate-50 hover:bg-brand-sky/10 text-slate-600 hover:text-brand-sky border border-slate-200 rounded-xl py-3 text-xs font-semibold transition-colors flex flex-col items-center gap-1">
+                  <Droplet size={18} /> +1.0L
+                </button>
               </div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>*Streak targets reset daily. Maintain 2500ml+ for streak rewards.</p>
+              <p className="text-[10px] text-slate-400 text-center uppercase tracking-wider">Streak targets reset daily.</p>
             </div>
           </div>
 
           {/* Calorie & Macro Target Progress */}
-          <div className="card" style={{ gridColumn: 'span 8' }}>
-            <h3>Calorie & Macronutrient Intake</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginTop: '1.5rem', marginBottom: '1.5rem' }}>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Calories logged</p>
-                <h2>{loggedTotals.cal} <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>kcal</span></h2>
+          <div className="glass-card lg:col-span-8">
+            <h3 className="text-lg font-bold text-slate-800 mb-6">Calorie & Macronutrient Intake</h3>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-center relative overflow-hidden group">
+                <div className="absolute inset-0 bg-slate-800/5 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2 relative z-10">Calories</p>
+                <h2 className="text-2xl font-black text-slate-800 relative z-10">{loggedTotals.cal} <span className="text-sm font-medium text-slate-400">kcal</span></h2>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Protein</p>
-                <h2 style={{ color: 'var(--accent-emerald)' }}>{loggedTotals.prot}g</h2>
+              <div className="bg-brand-teal/5 rounded-2xl p-4 border border-brand-teal/10 text-center relative overflow-hidden group">
+                <div className="absolute inset-0 bg-brand-teal/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                <p className="text-xs font-semibold text-brand-teal/70 uppercase tracking-widest mb-2 relative z-10">Protein</p>
+                <h2 className="text-2xl font-black text-brand-teal relative z-10">{loggedTotals.prot}g</h2>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Carbohydrates</p>
-                <h2 style={{ color: 'var(--accent-gold)' }}>{loggedTotals.carbs}g</h2>
+              <div className="bg-amber-500/5 rounded-2xl p-4 border border-amber-500/10 text-center relative overflow-hidden group">
+                <div className="absolute inset-0 bg-amber-500/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                <p className="text-xs font-semibold text-amber-600/70 uppercase tracking-widest mb-2 relative z-10">Carbs</p>
+                <h2 className="text-2xl font-black text-amber-500 relative z-10">{loggedTotals.carbs}g</h2>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Fat</p>
-                <h2 style={{ color: 'var(--status-red)' }}>{loggedTotals.fat}g</h2>
+              <div className="bg-red-500/5 rounded-2xl p-4 border border-red-500/10 text-center relative overflow-hidden group">
+                <div className="absolute inset-0 bg-red-500/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                <p className="text-xs font-semibold text-red-600/70 uppercase tracking-widest mb-2 relative z-10">Fat</p>
+                <h2 className="text-2xl font-black text-red-500 relative z-10">{loggedTotals.fat}g</h2>
               </div>
             </div>
 
             {/* List logged meals */}
-            <div className="custom-table-container">
-              <table className="custom-table">
+            <h4 className="text-sm font-bold text-slate-700 mb-3">Today's Log</h4>
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr>
-                    <th>Meal Category</th>
-                    <th>Meal Items Name</th>
-                    <th>Calories</th>
-                    <th>Macros (P / C / F)</th>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Meal</th>
+                    <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Items</th>
+                    <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Cals</th>
+                    <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Macros</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="text-sm">
                   {dailyLog?.mealsLogged && Object.keys(dailyLog.mealsLogged).map((key) => {
                     const meal = dailyLog.mealsLogged[key];
                     return meal.logged ? (
-                      <tr key={key}>
-                        <td style={{ textTransform: 'capitalize', fontWeight: 'bold' }}>{key}</td>
-                        <td>{meal.name}</td>
-                        <td>{meal.calories} kcal</td>
-                        <td>{meal.protein}g / {meal.carbs}g / {meal.fat}g</td>
+                      <tr key={key} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4 font-bold text-slate-800 capitalize">{key}</td>
+                        <td className="py-3 px-4 text-slate-600">{meal.name}</td>
+                        <td className="py-3 px-4 font-medium text-slate-700">{meal.calories} kcal</td>
+                        <td className="py-3 px-4">
+                          <span className="text-brand-teal font-medium">{meal.protein}g P</span> <span className="text-slate-300">•</span>{' '}
+                          <span className="text-amber-500 font-medium">{meal.carbs}g C</span> <span className="text-slate-300">•</span>{' '}
+                          <span className="text-red-500 font-medium">{meal.fat}g F</span>
+                        </td>
                       </tr>
                     ) : (
-                      <tr key={key} style={{ color: 'var(--text-muted)' }}>
-                        <td style={{ textTransform: 'capitalize' }}>{key}</td>
-                        <td>Not logged yet</td>
-                        <td>--</td>
-                        <td>--</td>
+                      <tr key={key} className="border-b border-slate-100 last:border-0 text-slate-400">
+                        <td className="py-3 px-4 capitalize font-medium">{key}</td>
+                        <td className="py-3 px-4 italic">Not logged</td>
+                        <td className="py-3 px-4">--</td>
+                        <td className="py-3 px-4">--</td>
                       </tr>
                     );
                   })}
@@ -777,24 +819,24 @@ const UserDashboard = () => {
           </div>
 
           {/* Add Meal Entry */}
-          <div className="card" style={{ gridColumn: 'span 7' }}>
-            <h3>Log Daily Meal Entry</h3>
-            <form onSubmit={handleMealSubmit} style={{ marginTop: '1rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Meal Category</label>
-                  <select value={mealCategory} onChange={(e) => setMealCategory(e.target.value)} className="form-control">
+          <div className="glass-card lg:col-span-7">
+            <h3 className="text-lg font-bold text-slate-800 mb-6">Log Meal Entry</h3>
+            <form onSubmit={handleMealSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Meal Category</label>
+                  <select value={mealCategory} onChange={(e) => setMealCategory(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all">
                     <option value="breakfast">Breakfast</option>
                     <option value="lunch">Lunch</option>
                     <option value="dinner">Dinner</option>
                     <option value="snacks">Snacks</option>
                   </select>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Meal Description</label>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Meal Description</label>
                   <input
                     type="text"
-                    className="form-control"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all"
                     placeholder="e.g. Scrambled eggs + rye toast"
                     value={mealName}
                     onChange={(e) => setMealName(e.target.value)}
@@ -802,42 +844,50 @@ const UserDashboard = () => {
                   />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Calories</label>
-                  <input type="number" className="form-control" value={mealCal} onChange={(e) => setMealCal(e.target.value)} />
+              <div className="grid grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Cals</label>
+                  <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={mealCal} onChange={(e) => setMealCal(e.target.value)} />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Protein (g)</label>
-                  <input type="number" className="form-control" value={mealProt} onChange={(e) => setMealProt(e.target.value)} />
+                <div>
+                  <label className="block text-xs font-semibold text-brand-teal uppercase tracking-wider mb-1.5">Protein(g)</label>
+                  <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={mealProt} onChange={(e) => setMealProt(e.target.value)} />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Carbs (g)</label>
-                  <input type="number" className="form-control" value={mealCarbs} onChange={(e) => setMealCarbs(e.target.value)} />
+                <div>
+                  <label className="block text-xs font-semibold text-amber-500 uppercase tracking-wider mb-1.5">Carbs(g)</label>
+                  <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={mealCarbs} onChange={(e) => setMealCarbs(e.target.value)} />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Fat (g)</label>
-                  <input type="number" className="form-control" value={mealFat} onChange={(e) => setMealFat(e.target.value)} />
+                <div>
+                  <label className="block text-xs font-semibold text-red-500 uppercase tracking-wider mb-1.5">Fat(g)</label>
+                  <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={mealFat} onChange={(e) => setMealFat(e.target.value)} />
                 </div>
               </div>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Add Meal to Log</button>
+              <button type="submit" className="w-full mt-2 premium-gradient text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-[0.98]">
+                Add Meal to Log
+              </button>
             </form>
           </div>
 
           {/* Dynamic Personalized Wellness Recommendations */}
-          <div className="card card-glowing-emerald" style={{ gridColumn: 'span 5' }}>
-            <h3>Personalized Wellness Tips</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Based on your latest health data & daily logs.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="glass-card lg:col-span-5 bg-gradient-to-br from-slate-50 to-brand-teal/5">
+            <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+              <Compass size={20} className="text-brand-teal" />
+              Personalized Tips
+            </h3>
+            <p className="text-xs text-slate-500 mb-5">Based on your latest health data & logs.</p>
+            <div className="space-y-3">
               {recommendations.length > 0 ? (
                 recommendations.map((rec, i) => (
-                  <div key={i} style={{ padding: '0.75rem', background: 'rgba(16, 185, 129, 0.05)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(16, 185, 129, 0.15)' }}>
-                    <h4 style={{ fontSize: '0.85rem', color: 'var(--accent-emerald)', marginBottom: '0.2rem' }}>{rec.title}</h4>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{rec.body}</p>
+                  <div key={i} className="bg-white rounded-xl p-4 border border-brand-teal/10 shadow-sm">
+                    <h4 className="text-sm font-bold text-brand-teal mb-1">{rec.title}</h4>
+                    <p className="text-xs text-slate-600 leading-relaxed">{rec.body}</p>
                   </div>
                 ))
               ) : (
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Loading personalized tips...</p>
+                <div className="text-center py-6">
+                  <Activity size={24} className="text-slate-300 mx-auto mb-2 animate-pulse" />
+                  <p className="text-sm text-slate-400">Loading personalized tips...</p>
+                </div>
               )}
             </div>
           </div>
@@ -846,44 +896,59 @@ const UserDashboard = () => {
 
       {/* 3. WORKOUT VIDEO STREAMING */}
       {selectedTab === 'workouts' && (
-        <div>
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <div className="animate-in fade-in duration-500">
+          <div className="flex space-x-2 overflow-x-auto pb-4 mb-2">
             {['All', 'Fat Loss', 'Muscle Gain', 'Yoga & Breathing', 'Meditation'].map((cat) => (
-              <button key={cat} onClick={() => setVideoCategory(cat)} className={`btn ${videoCategory === cat ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
+              <button 
+                key={cat} 
+                onClick={() => setVideoCategory(cat)} 
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap ${
+                  videoCategory === cat 
+                    ? 'bg-brand-teal text-white shadow-md shadow-brand-teal/20' 
+                    : 'bg-white text-slate-600 border border-slate-200 hover:border-brand-teal/50 hover:text-brand-teal'
+                }`}
+              >
                 {cat}
               </button>
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredWorkouts.length > 0 ? (
               filteredWorkouts.map((workout) => (
-                <div key={workout._id} className="card card-glowing-emerald">
-                  <div style={{ position: 'relative', width: '100%', height: '0', paddingBottom: '56.25%', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                <div key={workout._id} className="glass-card group overflow-hidden flex flex-col p-0">
+                  <div className="relative w-full aspect-video bg-slate-900">
                     <iframe
                       title={workout.title}
                       src={workout.videoUrl}
-                      style={{ position: 'absolute', width: '100%', height: '100%', left: '0', top: '0', border: 'none' }}
+                      className="absolute inset-0 w-full h-full border-0"
                       allowFullScreen
                     ></iframe>
                   </div>
-                  <div style={{ marginTop: '1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="status-pill status-green-tag">{workout.category}</span>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{workout.duration} mins • {workout.mode} • Day {workout.day}</span>
-                    </div>
-                    <h3 style={{ margin: '0.5rem 0' }}>{workout.title}</h3>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{workout.description}</p>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                      <span className="badge-item" style={{ background: 'rgba(255,255,255,0.05)', color: 'white', border: 'none' }}>
-                        {workout.level} Program
+                  <div className="p-5 flex flex-col flex-grow">
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="inline-flex px-2.5 py-1 rounded bg-brand-sky/10 text-brand-sky text-[10px] font-bold uppercase tracking-wider">
+                        {workout.category}
                       </span>
+                      <span className="text-xs font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded flex items-center gap-1">
+                        <Calendar size={12} /> Day {workout.day}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-800 leading-tight mb-2 group-hover:text-brand-teal transition-colors">{workout.title}</h3>
+                    <p className="text-sm text-slate-500 line-clamp-2 mb-4">{workout.description}</p>
+                    <div className="mt-auto flex items-center gap-4 text-xs font-medium text-slate-400 pt-4 border-t border-slate-100">
+                      <span className="flex items-center gap-1"><Tv size={14} /> {workout.duration} mins</span>
+                      <span className="flex items-center gap-1"><Activity size={14} /> {workout.level}</span>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              <p style={{ color: 'var(--text-muted)' }}>No workouts found in this category.</p>
+              <div className="col-span-full glass-card text-center py-12">
+                <Tv size={48} className="text-slate-200 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-slate-700 mb-1">No workouts found</h3>
+                <p className="text-sm text-slate-500">Try selecting a different category.</p>
+              </div>
             )}
           </div>
         </div>
@@ -891,49 +956,60 @@ const UserDashboard = () => {
 
       {/* 4. TRANSFORMATION TAB */}
       {selectedTab === 'transformation' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">
           
           {/* Historical progression charts */}
-          <div className="card" style={{ gridColumn: 'span 7' }}>
-            <h3>Weight Tracking & Dimension Trends</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Tracking your bi-weekly changes:</p>
+          <div className="glass-card lg:col-span-7">
+            <h3 className="text-lg font-bold text-slate-800 mb-1">Weight Tracking & Dimension Trends</h3>
+            <p className="text-xs text-slate-500 mb-6">Tracking your bi-weekly changes.</p>
             
-            <div className="custom-chart-container">
+            <div className="h-64 flex items-end gap-2 border-b border-slate-200 pb-2 relative px-4">
               {transformations.length > 0 ? (
                 transformations.map((trans, idx) => {
-                  const maxWeight = 100; // rough scale
+                  const maxWeight = Math.max(...transformations.map(t => t.weight), 100);
                   const barHeight = (trans.weight / maxWeight) * 100;
                   return (
-                    <div key={idx} className="chart-bar-wrapper">
-                      <div className="chart-bar" style={{ height: `${barHeight}%` }} data-value={`${trans.weight} kg`}></div>
-                      <span className="chart-label">{new Date(trans.date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span>
+                    <div key={idx} className="flex-1 flex flex-col justify-end items-center group relative h-full">
+                      {/* Tooltip */}
+                      <div className="opacity-0 group-hover:opacity-100 absolute bottom-full mb-2 bg-slate-800 text-white text-xs py-1 px-2 rounded pointer-events-none transition-opacity whitespace-nowrap z-10">
+                        {trans.weight} kg
+                      </div>
+                      <div className="w-full max-w-[40px] bg-brand-teal/80 hover:bg-brand-teal rounded-t-sm transition-all" style={{ height: `${barHeight}%` }}></div>
+                      <span className="text-[10px] text-slate-400 mt-2 rotate-45 origin-left whitespace-nowrap">
+                        {new Date(trans.date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
+                      </span>
                     </div>
                   );
                 })
               ) : (
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '1rem' }}>No transformation logs. Enter weight below to draw chart.</p>
+                <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm italic">
+                  No transformation logs. Enter weight below to draw chart.
+                </div>
               )}
             </div>
 
-            <div style={{ marginTop: '1.5rem' }}>
-              <h4>Transformation History Entries</h4>
-              <div className="custom-table-container" style={{ marginTop: '0.5rem' }}>
-                <table className="custom-table">
+            <div className="mt-12">
+              <h4 className="text-sm font-bold text-slate-700 mb-3">Transformation History Entries</h4>
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Weight</th>
-                      <th>Chest / Waist / Hips / Biceps</th>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Date</th>
+                      <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Weight</th>
+                      <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Measurements (C/W/H/B)</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="text-sm">
                     {transformations.map((trans, i) => (
-                      <tr key={i}>
-                        <td>{new Date(trans.date).toLocaleDateString()}</td>
-                        <td>{trans.weight} kg</td>
-                        <td>{trans.chest || '--'}" / {trans.waist || '--'}" / {trans.hips || '--'}" / {trans.biceps || '--'}"</td>
+                      <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4 text-slate-600">{new Date(trans.date).toLocaleDateString()}</td>
+                        <td className="py-3 px-4 font-bold text-brand-teal">{trans.weight} kg</td>
+                        <td className="py-3 px-4 text-slate-500">{trans.chest || '--'}" / {trans.waist || '--'}" / {trans.hips || '--'}" / {trans.biceps || '--'}"</td>
                       </tr>
                     ))}
+                    {transformations.length === 0 && (
+                      <tr><td colSpan="3" className="py-4 text-center text-slate-400">No logs found.</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -941,50 +1017,81 @@ const UserDashboard = () => {
           </div>
 
           {/* Add progression details */}
-          <div className="card" style={{ gridColumn: 'span 5' }}>
-            <h3>Record Weight & Body Specs</h3>
-            <form onSubmit={handleTransformationSubmit} style={{ marginTop: '1rem' }}>
-              <div className="form-group">
-                <label className="form-label">Body Weight (kg)</label>
-                <input type="number" className="form-control" placeholder="e.g. 78.5" value={weight} onChange={(e) => setWeight(e.target.value)} required />
+          <div className="glass-card lg:col-span-5">
+            <h3 className="text-lg font-bold text-slate-800 mb-6">Record Weight & Body Specs</h3>
+            <form onSubmit={handleTransformationSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Body Weight (kg)</label>
+                <div className="relative">
+                  <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-4 pr-12 py-2.5 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all font-bold text-brand-teal text-lg" placeholder="e.g. 78.5" value={weight} onChange={(e) => setWeight(e.target.value)} required />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-sm">kg</span>
+                </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Chest (inches)</label>
-                  <input type="number" className="form-control" placeholder="e.g. 40" value={chest} onChange={(e) => setChest(e.target.value)} />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Chest (in)</label>
+                  <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" placeholder="40" value={chest} onChange={(e) => setChest(e.target.value)} />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Waist (inches)</label>
-                  <input type="number" className="form-control" placeholder="e.g. 32" value={waist} onChange={(e) => setWaist(e.target.value)} />
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Waist (in)</label>
+                  <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" placeholder="32" value={waist} onChange={(e) => setWaist(e.target.value)} />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Hips (inches)</label>
-                  <input type="number" className="form-control" placeholder="e.g. 38" value={hips} onChange={(e) => setHips(e.target.value)} />
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Hips (in)</label>
+                  <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" placeholder="38" value={hips} onChange={(e) => setHips(e.target.value)} />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Biceps (inches)</label>
-                  <input type="number" className="form-control" placeholder="e.g. 14.5" value={biceps} onChange={(e) => setBiceps(e.target.value)} />
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Biceps (in)</label>
+                  <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" placeholder="14.5" value={biceps} onChange={(e) => setBiceps(e.target.value)} />
                 </div>
               </div>
 
               {/* Photo Selectors */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Before Photo</label>
-                  <input type="file" onChange={(e) => setBeforePhoto(e.target.files[0])} accept="image/*" style={{ fontSize: '0.8rem' }} />
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Before Photo</label>
+                  <label className="flex items-center justify-center w-full h-24 border-2 border-dashed border-slate-300 rounded-lg hover:bg-slate-100 hover:border-brand-teal cursor-pointer transition-colors overflow-hidden group">
+                    {beforePhoto ? (
+                      <span className="text-xs text-brand-teal font-medium truncate px-2">{beforePhoto.name}</span>
+                    ) : (
+                      <div className="flex flex-col items-center text-slate-400 group-hover:text-brand-teal">
+                        <Camera size={20} className="mb-1" />
+                        <span className="text-[10px] font-medium">Upload</span>
+                      </div>
+                    )}
+                    <input type="file" className="hidden" onChange={(e) => setBeforePhoto(e.target.files[0])} accept="image/*" />
+                  </label>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">After Photo</label>
-                  <input type="file" onChange={(e) => setAfterPhoto(e.target.files[0])} accept="image/*" style={{ fontSize: '0.8rem' }} />
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">After Photo</label>
+                  <label className="flex items-center justify-center w-full h-24 border-2 border-dashed border-slate-300 rounded-lg hover:bg-slate-100 hover:border-brand-teal cursor-pointer transition-colors overflow-hidden group">
+                    {afterPhoto ? (
+                      <span className="text-xs text-brand-teal font-medium truncate px-2">{afterPhoto.name}</span>
+                    ) : (
+                      <div className="flex flex-col items-center text-slate-400 group-hover:text-brand-teal">
+                        <Camera size={20} className="mb-1" />
+                        <span className="text-[10px] font-medium">Upload</span>
+                      </div>
+                    )}
+                    <input type="file" className="hidden" onChange={(e) => setAfterPhoto(e.target.files[0])} accept="image/*" />
+                  </label>
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Progress Notes</label>
-                <textarea className="form-control" placeholder="Describe muscle soreness or diet adherence details..." value={transNotes} onChange={(e) => setTransNotes(e.target.value)}></textarea>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Progress Notes</label>
+                <textarea 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all min-h-[80px]" 
+                  placeholder="Describe muscle soreness or diet adherence details..." 
+                  value={transNotes} 
+                  onChange={(e) => setTransNotes(e.target.value)}
+                ></textarea>
               </div>
 
-              <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Submit Progress Log</button>
+              <button type="submit" className="w-full premium-gradient text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-[0.98] flex justify-center items-center gap-2 mt-2">
+                <Upload size={18} /> Submit Progress Log
+              </button>
             </form>
           </div>
         </div>
@@ -992,16 +1099,16 @@ const UserDashboard = () => {
 
       {/* 5. HEALTH DOCS LOCKER */}
       {selectedTab === 'healthdocs' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">
           
           {/* Documents Upload Panel */}
-          <div className="card" style={{ gridColumn: 'span 5' }}>
-            <h3>Upload Health Documents</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Upload medical lab reports, X-rays, sugar levels, or thyroid sheets.</p>
-            <form onSubmit={handleDocSubmit}>
-              <div className="form-group">
-                <label className="form-label">Report Category</label>
-                <select value={docCategory} onChange={(e) => setDocCategory(e.target.value)} className="form-control">
+          <div className="glass-card lg:col-span-4">
+            <h3 className="text-lg font-bold text-slate-800 mb-1">Upload Health Documents</h3>
+            <p className="text-xs text-slate-500 mb-6">Store medical lab reports securely.</p>
+            <form onSubmit={handleDocSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Report Category</label>
+                <select value={docCategory} onChange={(e) => setDocCategory(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-teal transition-all">
                   <option value="Blood Report">Blood Report</option>
                   <option value="Full Body Checkup">Full Body Checkup</option>
                   <option value="X-Ray / ECG">X-Ray / ECG</option>
@@ -1010,53 +1117,72 @@ const UserDashboard = () => {
                   <option value="Other">Other</option>
                 </select>
               </div>
-              <div className="form-group">
-                <label className="form-label">Lab File (PDF or Image)</label>
-                <input type="file" onChange={(e) => setDocFile(e.target.files[0])} required style={{ fontSize: '0.85rem' }} />
+              
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Lab File (PDF or Image)</label>
+                <div className="flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-brand-teal transition-all">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <FileText className="w-8 h-8 mb-2 text-slate-400" />
+                      <p className="mb-1 text-sm text-slate-500"><span className="font-semibold text-brand-teal">Click to upload</span></p>
+                      <p className="text-xs text-slate-400">PDF, PNG, JPG</p>
+                    </div>
+                    <input type="file" className="hidden" onChange={(e) => setDocFile(e.target.files[0])} required />
+                  </label>
+                </div>
+                {docFile && <p className="text-xs text-brand-teal mt-2 truncate font-medium">Selected: {docFile.name}</p>}
               </div>
-              <div className="form-group">
-                <label className="form-label">File Description Notes</label>
-                <textarea className="form-control" placeholder="e.g. Lab checkup report from City Labs." value={docNotes} onChange={(e) => setDocNotes(e.target.value)}></textarea>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Description Notes</label>
+                <textarea 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-teal transition-all" 
+                  placeholder="e.g. Lab checkup report from City Labs." 
+                  value={docNotes} 
+                  onChange={(e) => setDocNotes(e.target.value)}
+                  rows="3"
+                ></textarea>
               </div>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
+              <button type="submit" className="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-xl transition-all flex justify-center items-center gap-2">
                 <Upload size={16} /> Upload Securely
               </button>
             </form>
           </div>
 
           {/* Files List Locker */}
-          <div className="card" style={{ gridColumn: 'span 7' }}>
-            <h3>Secure Health Locker Files</h3>
-            <div className="custom-table-container" style={{ marginTop: '1rem' }}>
-              <table className="custom-table">
+          <div className="glass-card lg:col-span-8">
+            <h3 className="text-lg font-bold text-slate-800 mb-6">Secure Health Locker Files</h3>
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr>
-                    <th>Uploaded Date</th>
-                    <th>Report Category</th>
-                    <th>Document Filename</th>
-                    <th>Description Notes</th>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Date</th>
+                    <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Category</th>
+                    <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">File</th>
+                    <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Notes</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="text-sm">
                   {documents.length > 0 ? (
                     documents.map((doc, idx) => (
-                      <tr key={idx}>
-                        <td>{new Date(doc.uploadDate).toLocaleDateString()}</td>
-                        <td>
-                          <span className="status-pill status-green-tag">{doc.fileCategory}</span>
+                      <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4 text-slate-500 whitespace-nowrap">{new Date(doc.uploadDate).toLocaleDateString()}</td>
+                        <td className="py-3 px-4">
+                          <span className="inline-flex px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200">{doc.fileCategory}</span>
                         </td>
-                        <td>
-                          <a href={doc.filePath} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-emerald)', textDecoration: 'underline' }}>
-                            {doc.fileName}
+                        <td className="py-3 px-4">
+                          <a href={doc.filePath} target="_blank" rel="noopener noreferrer" className="text-brand-sky hover:text-brand-sky/80 font-medium flex items-center gap-1">
+                            <FileText size={14} /> View Document
                           </a>
                         </td>
-                        <td>{doc.notes || '--'}</td>
+                        <td className="py-3 px-4 text-slate-600 max-w-[200px] truncate">{doc.notes || '--'}</td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
-                        No files in secure storage.
+                      <td colSpan="4" className="py-12 text-center">
+                         <FileText size={48} className="text-slate-200 mx-auto mb-3" />
+                         <p className="text-slate-500 font-medium">No files in secure storage.</p>
                       </td>
                     </tr>
                   )}
@@ -1069,92 +1195,192 @@ const UserDashboard = () => {
 
       {/* 6. SOCIAL & LEADERBOARD TAB */}
       {selectedTab === 'community' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">
           
           {/* Scrolling Feed posting */}
-          <div style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="lg:col-span-8 flex flex-col gap-6">
             
             {/* Create Post */}
-            <div className="card">
-              <h3>Share Progress / Motivation</h3>
-              <form onSubmit={handlePostSubmit} style={{ marginTop: '1rem' }}>
-                <div className="form-group">
-                  <textarea
-                    className="form-control"
-                    placeholder="Inspire the community! e.g. Just completed my day 3 push training!"
-                    value={postContent}
-                    onChange={(e) => setPostContent(e.target.value)}
-                    required
-                  ></textarea>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <select value={postType} onChange={(e) => setPostType(e.target.value)} className="form-control" style={{ width: '180px', padding: '0.4rem' }}>
+            <div className="glass-card p-5">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">Share Progress / Motivation</h3>
+              <form onSubmit={handlePostSubmit}>
+                <textarea
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all mb-3 min-h-[100px] resize-y"
+                  placeholder="Inspire the community! e.g. Just completed my day 3 push training!"
+                  value={postContent}
+                  onChange={(e) => setPostContent(e.target.value)}
+                  required
+                ></textarea>
+                <div className="flex flex-wrap sm:flex-nowrap justify-between items-center gap-3">
+                  <select value={postType} onChange={(e) => setPostType(e.target.value)} className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal text-slate-600 font-medium w-full sm:w-auto">
                     <option value="Post">Regular Post</option>
                     <option value="SuccessStory">Success Story</option>
                     <option value="MotivationalQuote">Motivational Quote</option>
                   </select>
-                  <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 1.5rem' }}>Share Post</button>
+                  <button type="submit" className="premium-gradient text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-all whitespace-nowrap w-full sm:w-auto">
+                    Share Post
+                  </button>
                 </div>
               </form>
             </div>
 
             {/* Scrolling Feed list */}
-            {feed.map((post) => (
-              <div key={post._id} className="card card-glowing-emerald">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <div>
-                    <h4 style={{ color: 'var(--text-primary)' }}>{post.authorName}</h4>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{post.authorRole.toUpperCase()}</span>
+            <div className="space-y-4">
+              {feed.map((post) => (
+                <div key={post._id} className="glass-card p-5 hover:border-brand-teal/30 transition-colors">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal font-bold uppercase shrink-0">
+                        {post.authorName.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-800 leading-tight">{post.authorName}</h4>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{post.authorRole}</span>
+                      </div>
+                    </div>
+                    <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase ${post.postType === 'SuccessStory' ? 'bg-emerald-100 text-emerald-700' : post.postType === 'MotivationalQuote' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                      {post.postType}
+                    </span>
                   </div>
-                  <span className={`status-pill ${post.postType === 'SuccessStory' ? 'status-green-tag' : post.postType === 'MotivationalQuote' ? 'status-yellow-tag' : 'status-red-tag'}`}>
-                    {post.postType}
-                  </span>
-                </div>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '1rem', lineHeight: '1.4' }}>
-                  {post.content}
-                </p>
-                <div style={{ display: 'flex', gap: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', alignItems: 'center' }}>
-                  <button onClick={() => handleLike(post._id)} className="btn btn-secondary" style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', background: 'transparent', border: '1px solid var(--border-color)' }}>
-                    ❤ Like ({post.likes?.length || 0})
-                  </button>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{post.comments?.length || 0} comments</span>
-                </div>
-                
-                {/* Render comments */}
-                {post.comments && post.comments.length > 0 && (
-                  <div style={{ marginTop: '0.75rem', background: 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '4px' }}>
-                    {post.comments.map((comment, idx) => (
-                      <p key={idx} style={{ fontSize: '0.8rem', marginBottom: '0.25rem' }}>
-                        <strong>{comment.userName}:</strong> {comment.content}
-                      </p>
-                    ))}
+                  
+                  <p className="text-slate-600 mb-4 whitespace-pre-wrap">{post.content}</p>
+                  
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                    <button 
+                      onClick={() => handleLike(post._id)} 
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-brand-sky hover:bg-brand-sky/5 transition-colors"
+                    >
+                      <Heart size={16} className={post.likes?.includes(user._id) ? "fill-brand-sky text-brand-sky" : ""} /> 
+                      {post.likes?.length || 0}
+                    </button>
+                    <span className="text-xs text-slate-400 font-medium">{post.comments?.length || 0} comments</span>
                   </div>
-                )}
-              </div>
-            ))}
+                  
+                  {/* Render comments */}
+                  {post.comments && post.comments.length > 0 && (
+                    <div className="mt-4 space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                      {post.comments.map((comment, idx) => (
+                        <div key={idx} className="flex gap-2">
+                          <span className="font-bold text-slate-700 text-xs shrink-0">{comment.userName}:</span>
+                          <span className="text-slate-600 text-xs">{comment.content}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {feed.length === 0 && (
+                <div className="text-center py-8 text-slate-500 glass-card">
+                  No posts yet. Be the first to share!
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Gamified Leaderboard */}
-          <div className="card" style={{ gridColumn: 'span 4' }}>
-            <h3>Wellness Leaderboard</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Rankings by points & streaks:</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {leaderboard.map((usr, i) => (
-                <div key={usr._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: usr._id === user._id ? 'var(--accent-emerald-glow)' : 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', border: usr._id === user._id ? '1px solid var(--accent-emerald)' : '1px solid var(--border-color)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontWeight: 'bold', width: '20px', color: i === 0 ? 'var(--accent-gold)' : 'var(--text-secondary)' }}>#{i + 1}</span>
-                    <div>
-                      <p style={{ fontSize: '0.85rem', fontWeight: 600 }}>{usr.name}</p>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{usr.wellnessLevel}</span>
+          <div className="glass-card lg:col-span-4 h-fit">
+            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-1">
+              <Award size={20} className="text-amber-500" /> Leaderboard
+            </h3>
+            <p className="text-xs text-slate-500 mb-5">Rankings by ecosystem points.</p>
+            
+            <div className="flex flex-col gap-3">
+              {leaderboard.map((usr, i) => {
+                const isCurrentUser = usr._id === user._id;
+                return (
+                  <div 
+                    key={usr._id} 
+                    className={`flex justify-between items-center p-3 rounded-xl border ${
+                      isCurrentUser 
+                        ? 'bg-brand-teal/5 border-brand-teal shadow-sm shadow-brand-teal/10' 
+                        : 'bg-white border-slate-100 hover:border-slate-200'
+                    } transition-colors`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-6 text-center font-bold text-sm ${i === 0 ? 'text-amber-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-amber-700' : 'text-slate-300'}`}>
+                        #{i + 1}
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs uppercase shrink-0">
+                        {usr.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className={`text-sm font-bold ${isCurrentUser ? 'text-brand-teal' : 'text-slate-700'}`}>{usr.name}</p>
+                        <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{usr.wellnessLevel}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <strong className="text-amber-500 font-bold">{usr.points}</strong>
+                      <span className="text-[10px] text-slate-400 block -mt-1 font-medium">XP</span>
                     </div>
                   </div>
-                  <strong style={{ color: 'var(--accent-gold)', fontSize: '0.9rem' }}>{usr.points} XP</strong>
-                </div>
-              ))}
+                );
+              })}
+              {leaderboard.length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-4">No rankings available yet.</p>
+              )}
             </div>
           </div>
         </div>
       )}
+      {/* 6. ANALYTICS & GRAPHS TAB */}
+      {selectedTab === 'analytics' && (
+        <div className="space-y-6 animate-in fade-in duration-500">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Weight Progress Graph */}
+            <div className="glass-card">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">Weight & Fat Loss Progress</h3>
+              <div className="h-72 w-full">
+                {graphData?.bodyAnalysis?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={graphData.bodyAnalysis} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#14B8A6" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#14B8A6" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                      <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dx={-10} domain={['dataMin - 5', 'dataMax + 5']} />
+                      <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dx={10} domain={['dataMin - 2', 'dataMax + 2']} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                      <Legend />
+                      <Area yAxisId="left" type="monotone" dataKey="weight" name="Weight (kg)" stroke="#14B8A6" strokeWidth={3} fillOpacity={1} fill="url(#colorWeight)" />
+                      <Area yAxisId="right" type="monotone" dataKey="bodyFat" name="Body Fat (%)" stroke="#F59E0B" strokeWidth={3} fillOpacity={0} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400">No body analysis data available.</div>
+                )}
+              </div>
+            </div>
+
+            {/* Medical Metrics Graph */}
+            <div className="glass-card">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">Blood Pressure & Sugar Trends</h3>
+              <div className="h-72 w-full">
+                {graphData?.medicalReports?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={graphData.medicalReports} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dx={-10} />
+                      <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                      <Legend />
+                      <Bar dataKey="bpSystolic" name="BP Systolic" fill="#0EA5E9" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="sugar" name="Fasting Sugar" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400">No medical reports available.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
