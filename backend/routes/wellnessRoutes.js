@@ -1,5 +1,5 @@
 import express from 'express';
-import { getWorkouts, getDailyLog, saveDailyLog, getTransformations, addTransformation, getQuote, getRecommendations, addWorkout, deleteWorkout, getAnalyticsGraphs } from '../controllers/wellnessController.js';
+import { getWorkouts, getDailyLog, saveDailyLog, getTransformations, getUserTransformations, addTransformation, getQuote, getRecommendations, addWorkout, deleteWorkout, getAnalyticsGraphs } from '../controllers/wellnessController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { upload } from '../middlewares/uploadMiddleware.js';
 
@@ -34,5 +34,8 @@ router.route('/transformation')
     ]),
     addTransformation
   );
+
+// Get a specific user's transformations (Staff/Admin only)
+router.get('/transformation/user/:userId', protect, authorize('staff', 'admin'), getUserTransformations);
 
 export default router;

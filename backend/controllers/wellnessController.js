@@ -374,6 +374,18 @@ export const getTransformations = async (req, res) => {
   }
 };
 
+// @desc    Get transformation history for a specific user
+// @route   GET /api/wellness/transformation/user/:userId
+// @access  Private (Staff/Admin)
+export const getUserTransformations = async (req, res) => {
+  try {
+    const transformations = await Transformation.find({ userId: req.params.userId }).sort({ date: 1 });
+    res.json(transformations);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Add transformation progress
 // @route   POST /api/wellness/transformation
 // @access  Private
