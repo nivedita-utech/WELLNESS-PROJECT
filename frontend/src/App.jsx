@@ -99,20 +99,20 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           </div>
 
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-            <Link to="/dashboard" className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-brand-teal/10 text-brand-teal font-medium">
+            <Link to="/dashboard" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${['/dashboard', '/admin', '/user', '/staff', '/franchise'].includes(location.pathname) ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
               <LayoutDashboard size={20} />
               Overview
             </Link>
             {/* These can be conditionally rendered based on role later */}
-            <Link to="/members" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium transition-colors">
+            <Link to="/members" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/members') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
               <Users size={20} />
               Members
             </Link>
-            <Link to="/billing" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium transition-colors">
+            <Link to="/billing" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/billing') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
               <CreditCard size={20} />
               Billing
             </Link>
-            <Link to="/settings" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium transition-colors">
+            <Link to="/settings" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/settings') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
               <SettingsIcon size={20} />
               Settings
             </Link>
