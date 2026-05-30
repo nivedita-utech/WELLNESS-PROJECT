@@ -61,112 +61,142 @@ const FranchiseDashboard = () => {
   };
 
   if (loading) {
-    return <div style={{ padding: '2rem', color: 'var(--accent-emerald)' }}>Loading Franchise Metrics...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <div className="w-10 h-10 border-4 border-brand-teal border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-slate-500 font-medium animate-pulse">Loading Franchise Metrics...</p>
+      </div>
+    );
   }
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
+    <div className="space-y-6">
       
       {/* Title */}
-      <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <Landmark size={24} color="var(--accent-emerald)" />
-        Franchise Operation Center: <span style={{ color: 'var(--text-secondary)' }}>{user.name}</span>
-      </h2>
+      <div className="flex items-center gap-3 mb-8">
+        <div className="w-12 h-12 bg-brand-teal/10 rounded-2xl flex items-center justify-center">
+          <Landmark size={24} className="text-brand-teal" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Franchise Operation Center</h2>
+          <p className="text-sm text-slate-500">Managing operations for: <span className="font-semibold text-brand-teal">{user.name}</span></p>
+        </div>
+      </div>
 
       {/* Grid boxes */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         
-        <div className="card card-glowing-emerald">
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Branch Total Revenue</p>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.5rem' }}>
-            <DollarSign size={24} color="var(--accent-emerald)" />
-            {data?.totalRevenue || 0}
-          </h1>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Accumulated sales volume</span>
+        <div className="glass-card premium-gradient text-white relative overflow-hidden group">
+          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="relative z-10">
+            <p className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1">Branch Total Revenue</p>
+            <h1 className="text-3xl font-black flex items-center gap-1 mt-2 tracking-tight">
+              <DollarSign size={28} className="text-white/80" />
+              {data?.totalRevenue || 0}
+            </h1>
+            <span className="text-[10px] text-white/60 uppercase tracking-wider block mt-4">Accumulated sales volume</span>
+          </div>
         </div>
 
-        <div className="card card-glowing-violet">
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Earned Commission</p>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.5rem', color: 'var(--accent-violet)' }}>
-            <DollarSign size={24} />
-            {data?.totalCommission || 0}
-          </h1>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>25% standard contract split</span>
+        <div className="glass-card bg-gradient-to-br from-indigo-500 to-purple-600 text-white relative overflow-hidden group border-none">
+          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="relative z-10">
+            <p className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-1">Earned Commission</p>
+            <h1 className="text-3xl font-black flex items-center gap-1 mt-2 tracking-tight">
+              <DollarSign size={28} className="text-white/80" />
+              {data?.totalCommission || 0}
+            </h1>
+            <span className="text-[10px] text-white/60 uppercase tracking-wider block mt-4">25% standard contract split</span>
+          </div>
         </div>
 
-        <div className="card">
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Active Coaching Staff</p>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <Users size={24} color="var(--accent-gold)" />
-            {data?.staff?.length || 0}
-          </h1>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Assigned to this branch</span>
+        <div className="glass-card relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-4 -translate-y-4 group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform">
+            <Users size={64} />
+          </div>
+          <div className="relative z-10">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">Active Coaching Staff</p>
+            <h1 className="text-3xl font-black text-slate-800 flex items-center gap-2 mt-2 tracking-tight">
+              {data?.staff?.length || 0}
+            </h1>
+            <span className="text-[10px] text-slate-400 font-medium block mt-4">Assigned to this branch</span>
+          </div>
         </div>
 
-        <div className="card">
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Registered Clients</p>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <Users size={24} color="var(--accent-emerald)" />
-            {data?.clients?.length || 0}
-          </h1>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Active platform members</span>
+        <div className="glass-card relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 transform translate-x-4 -translate-y-4 group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform">
+            <TrendingUp size={64} />
+          </div>
+          <div className="relative z-10">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">Registered Clients</p>
+            <h1 className="text-3xl font-black text-slate-800 flex items-center gap-2 mt-2 tracking-tight">
+              {data?.clients?.length || 0}
+            </h1>
+            <span className="text-[10px] text-slate-400 font-medium block mt-4">Active platform members</span>
+          </div>
         </div>
 
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Branch Team Onboarding */}
-        <div className="card" style={{ gridColumn: 'span 4' }}>
-          <h3>Onboard Coaching Staff</h3>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Register new coaches directly under this branch.</p>
-          <form onSubmit={handleAddStaffSubmit}>
-            <div className="form-group">
-              <label className="form-label">Full Name</label>
-              <input type="text" className="form-control" placeholder="e.g. Coach Alexander" value={staffName} onChange={(e) => setStaffName(e.target.value)} required />
+        <div className="glass-card lg:col-span-4 h-fit">
+          <h3 className="text-lg font-bold text-slate-800 mb-1">Onboard Coaching Staff</h3>
+          <p className="text-xs text-slate-500 mb-6">Register new coaches directly under this branch.</p>
+          <form onSubmit={handleAddStaffSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Full Name</label>
+              <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all" placeholder="e.g. Coach Alexander" value={staffName} onChange={(e) => setStaffName(e.target.value)} required />
             </div>
-            <div className="form-group">
-              <label className="form-label">Email Address</label>
-              <input type="email" className="form-control" placeholder="staff@branch.com" value={staffEmail} onChange={(e) => setStaffEmail(e.target.value)} required />
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Email Address</label>
+              <input type="email" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all" placeholder="staff@branch.com" value={staffEmail} onChange={(e) => setStaffEmail(e.target.value)} required />
             </div>
-            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-              <label className="form-label">Password</label>
-              <input type="password" className="form-control" placeholder="••••••••" value={staffPassword} onChange={(e) => setStaffPassword(e.target.value)} required />
+            <div className="mb-6">
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Password</label>
+              <input type="password" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all" placeholder="••••••••" value={staffPassword} onChange={(e) => setStaffPassword(e.target.value)} required />
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-              <PlusCircle size={16} /> Onboard Staff Account
+            <button type="submit" className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+              <PlusCircle size={18} /> Onboard Staff Account
             </button>
           </form>
         </div>
 
         {/* Branch Staff List */}
-        <div className="card" style={{ gridColumn: 'span 8' }}>
-          <h3>Branch Team Roster</h3>
-          <div className="custom-table-container" style={{ marginTop: '1rem' }}>
-            <table className="custom-table">
+        <div className="glass-card lg:col-span-8">
+          <h3 className="text-lg font-bold text-slate-800 mb-6">Branch Team Roster</h3>
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr>
-                  <th>Coach Name</th>
-                  <th>Email</th>
-                  <th>Assignment Status</th>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Coach Name</th>
+                  <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Email</th>
+                  <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Assignment Status</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-sm">
                 {data?.staff && data.staff.length > 0 ? (
                   data.staff.map((st, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontWeight: 600 }}>{st.name}</td>
-                      <td>{st.email}</td>
-                      <td>
-                        <span className={`status-pill ${st.status === 'Active' ? 'status-green-tag' : 'status-yellow-tag'}`}>
-                          {st.status}
+                    <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                      <td className="py-3 px-4 font-bold text-slate-800 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal text-xs font-bold uppercase shrink-0">
+                          {st.name.charAt(0)}
+                        </div>
+                        {st.name}
+                      </td>
+                      <td className="py-3 px-4 text-slate-600">{st.email}</td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${st.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {st.status || 'Active'}
                         </span>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="3" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
+                    <td colSpan="3" className="py-12 text-center text-slate-500">
+                      <Users size={48} className="text-slate-200 mx-auto mb-3" />
                       No staff members assigned to this franchise.
                     </td>
                   </tr>
@@ -177,35 +207,41 @@ const FranchiseDashboard = () => {
         </div>
 
         {/* Sales Transactions ledger */}
-        <div className="card" style={{ gridColumn: 'span 12' }}>
-          <h3>Branch Sales Ledger & Commissions Log</h3>
-          <div className="custom-table-container" style={{ marginTop: '1rem' }}>
-            <table className="custom-table">
+        <div className="glass-card lg:col-span-12">
+          <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+            <TrendingUp size={20} className="text-brand-teal" />
+            Branch Sales Ledger & Commissions Log
+          </h3>
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Transaction Description</th>
-                  <th>Sale Amount</th>
-                  <th>Franchise Split (25%)</th>
-                  <th>Assigned Ledger</th>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Date</th>
+                  <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Transaction Description</th>
+                  <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Sale Amount</th>
+                  <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Franchise Split (25%)</th>
+                  <th className="py-3 px-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Assigned Ledger</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-sm">
                 {data?.sales && data.sales.length > 0 ? (
                   data.sales.map((sale, i) => (
-                    <tr key={i}>
-                      <td>{new Date(sale.date).toLocaleDateString()}</td>
-                      <td>{sale.description}</td>
-                      <td style={{ fontWeight: 600, color: 'var(--accent-emerald)' }}>${sale.amount}</td>
-                      <td style={{ fontWeight: 600, color: 'var(--accent-violet)' }}>${sale.commissionAmount}</td>
-                      <td>
-                        <span className="status-pill status-green-tag">{sale.assignedTo}</span>
+                    <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                      <td className="py-4 px-4 text-slate-500 font-medium whitespace-nowrap">{new Date(sale.date).toLocaleDateString()}</td>
+                      <td className="py-4 px-4 text-slate-700">{sale.description}</td>
+                      <td className="py-4 px-4 font-bold text-slate-800">${sale.amount}</td>
+                      <td className="py-4 px-4 font-bold text-brand-teal">+ ${sale.commissionAmount}</td>
+                      <td className="py-4 px-4">
+                        <span className="inline-flex px-2.5 py-1 rounded bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider border border-slate-200">
+                          {sale.assignedTo}
+                        </span>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
+                    <td colSpan="5" className="py-12 text-center text-slate-500">
+                      <Landmark size={48} className="text-slate-200 mx-auto mb-3" />
                       No branch sales recorded yet.
                     </td>
                   </tr>

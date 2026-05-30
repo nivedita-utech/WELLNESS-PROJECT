@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { Search, UserPlus, FileHeart, ShieldAlert } from 'lucide-react';
+import { Search, UserPlus, FileHeart, ShieldAlert, Activity, ArrowRight } from 'lucide-react';
 
 const StaffDashboard = () => {
   const { authFetch } = useContext(AuthContext);
@@ -202,258 +202,295 @@ const StaffDashboard = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
-      <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <UserPlus size={24} color="var(--accent-emerald)" />
-        Ecosystem Staff & Coach Control Panel
-      </h2>
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-12 h-12 bg-brand-teal/10 rounded-2xl flex items-center justify-center">
+          <UserPlus size={24} className="text-brand-teal" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Ecosystem Staff & Coach Control Panel</h2>
+          <p className="text-sm text-slate-500">Manage clients, body analyses, and medical reports</p>
+        </div>
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Left Side: Client Selector */}
-        <div className="card" style={{ gridColumn: 'span 4' }}>
-          <h3>Client Lookup Directory</h3>
-          <div className="form-group" style={{ margin: '1rem 0' }}>
-            <div style={{ position: 'relative' }}>
-              <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search name or ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ paddingLeft: '2.5rem', width: '100%' }}
-              />
-            </div>
+        <div className="glass-card lg:col-span-4 flex flex-col h-[calc(100vh-140px)] sticky top-6">
+          <h3 className="text-lg font-bold text-slate-800 mb-4">Client Lookup Directory</h3>
+          <div className="relative mb-4 shrink-0">
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all"
+              placeholder="Search name or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '500px', overflowY: 'auto' }}>
+          <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
             {users.length > 0 ? (
               users.map((usr) => (
                 <div
                   key={usr._id}
                   onClick={() => selectClient(usr)}
-                  style={{
-                    padding: '1rem',
-                    background: selectedUser?._id === usr._id ? 'var(--accent-emerald-glow)' : 'rgba(255,255,255,0.02)',
-                    borderRadius: 'var(--radius-sm)',
-                    border: selectedUser?._id === usr._id ? '1px solid var(--accent-emerald)' : '1px solid var(--border-color)',
-                    cursor: 'pointer',
-                    transition: 'var(--transition-smooth)'
-                  }}
+                  className={`p-4 rounded-xl border transition-all cursor-pointer group ${
+                    selectedUser?._id === usr._id 
+                      ? 'bg-brand-teal/5 border-brand-teal shadow-sm shadow-brand-teal/10' 
+                      : 'bg-white border-slate-100 hover:border-brand-teal/30 hover:shadow-sm'
+                  }`}
                 >
-                  <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>{usr.name}</p>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ID: {usr.membershipId || '--'}</span>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-                    <span className="user-tag" style={{ fontSize: '0.65rem' }}>{usr.wellnessLevel}</span>
-                    <strong style={{ color: 'var(--accent-gold)', fontSize: '0.8rem' }}>{usr.points} XP</strong>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className={`font-bold ${selectedUser?._id === usr._id ? 'text-brand-teal' : 'text-slate-800 group-hover:text-brand-teal transition-colors'}`}>{usr.name}</p>
+                      <span className="text-xs text-slate-400 font-mono">ID: {usr.membershipId || '--'}</span>
+                    </div>
+                    <ArrowRight size={16} className={`${selectedUser?._id === usr._id ? 'text-brand-teal' : 'text-slate-300 group-hover:text-brand-teal'} transition-colors`} />
+                  </div>
+                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100">
+                    <span className="inline-flex px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase tracking-wider">
+                      {usr.wellnessLevel}
+                    </span>
+                    <strong className="text-amber-500 text-xs font-bold">{usr.points} XP</strong>
                   </div>
                 </div>
               ))
             ) : (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No clients found.</p>
+              <div className="text-center py-8">
+                <Search size={32} className="text-slate-200 mx-auto mb-3" />
+                <p className="text-slate-400 text-sm">No clients found matching your search.</p>
+              </div>
             )}
           </div>
         </div>
 
         {/* Right Side: Form Inputs */}
-        <div style={{ gridColumn: 'span 8' }}>
+        <div className="lg:col-span-8">
           {selectedUser ? (
-            <div className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-                <div>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Currently Profiling Client</p>
-                  <h2 style={{ color: 'var(--accent-emerald)' }}>{selectedUser.name}</h2>
+            <div className="glass-card animate-in slide-in-from-right-4 duration-300">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-5 mb-6 gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal font-bold text-lg uppercase shrink-0">
+                    {selectedUser.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Currently Profiling Client</p>
+                    <h2 className="text-xl font-bold text-slate-800">{selectedUser.name}</h2>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => setActiveForm('body')} className={`btn ${activeForm === 'body' ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
-                    Body Analysis Input
+                <div className="flex bg-slate-100 p-1 rounded-lg w-full sm:w-auto shrink-0">
+                  <button 
+                    onClick={() => setActiveForm('body')} 
+                    className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-semibold transition-all ${
+                      activeForm === 'body' ? 'bg-white text-brand-teal shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Body Analysis
                   </button>
-                  <button onClick={() => setActiveForm('medical')} className={`btn ${activeForm === 'medical' ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
-                    Medical Report Entry
+                  <button 
+                    onClick={() => setActiveForm('medical')} 
+                    className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-semibold transition-all ${
+                      activeForm === 'medical' ? 'bg-white text-brand-teal shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Medical Report
                   </button>
                 </div>
               </div>
 
               {/* A. BODY ANALYSIS FORM */}
               {activeForm === 'body' && (
-                <form onSubmit={handleBodyAnalysisSubmit}>
-                  <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <FileHeart size={18} color="var(--accent-emerald)" />
-                    Record Body Composition Metrics
-                  </h3>
+                <form onSubmit={handleBodyAnalysisSubmit} className="animate-in fade-in duration-300">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Activity size={20} className="text-brand-teal" />
+                    <h3 className="text-lg font-bold text-slate-800">Record Body Composition Metrics</h3>
+                  </div>
                   
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-                    <div className="form-group">
-                      <label className="form-label">Body Weight (kg)</label>
-                      <input type="number" step="0.1" className="form-control" placeholder="e.g. 74.2" value={weight} onChange={(e) => setWeight(e.target.value)} required />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Body Weight (kg)</label>
+                      <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-teal transition-all" placeholder="e.g. 74.2" value={weight} onChange={(e) => setWeight(e.target.value)} required />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Body Fat %</label>
-                      <input type="number" step="0.1" className="form-control" placeholder="e.g. 18.5" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} required />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Body Fat %</label>
+                      <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-teal transition-all" placeholder="e.g. 18.5" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} required />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">BMI Score</label>
-                      <input type="number" step="0.1" className="form-control" placeholder="e.g. 23.4" value={bmi} onChange={(e) => setBmi(e.target.value)} required />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-                    <div className="form-group">
-                      <label className="form-label">Muscle Mass % / kg</label>
-                      <input type="number" step="0.1" className="form-control" placeholder="e.g. 34.2" value={muscleMass} onChange={(e) => setMuscleMass(e.target.value)} required />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Visceral Fat Level</label>
-                      <input type="number" className="form-control" placeholder="e.g. 7" value={visceralFat} onChange={(e) => setVisceralFat(e.target.value)} required />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Water Content %</label>
-                      <input type="number" step="0.1" className="form-control" placeholder="e.g. 55.4" value={waterPercent} onChange={(e) => setWaterPercent(e.target.value)} required />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">BMI Score</label>
+                      <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-teal transition-all" placeholder="e.g. 23.4" value={bmi} onChange={(e) => setBmi(e.target.value)} required />
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-                    <div className="form-group">
-                      <label className="form-label">Protein Content %</label>
-                      <input type="number" step="0.1" className="form-control" placeholder="e.g. 17.5" value={proteinPercent} onChange={(e) => setProteinPercent(e.target.value)} required />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Muscle Mass % / kg</label>
+                      <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-teal transition-all" placeholder="e.g. 34.2" value={muscleMass} onChange={(e) => setMuscleMass(e.target.value)} required />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Metabolic Age</label>
-                      <input type="number" className="form-control" placeholder="e.g. 29" value={metabolicAge} onChange={(e) => setMetabolicAge(e.target.value)} required />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Visceral Fat Level</label>
+                      <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-teal transition-all" placeholder="e.g. 7" value={visceralFat} onChange={(e) => setVisceralFat(e.target.value)} required />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Bone Mass (kg)</label>
-                      <input type="number" step="0.1" className="form-control" placeholder="e.g. 3.2" value={boneMass} onChange={(e) => setBoneMass(e.target.value)} required />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Water Content %</label>
+                      <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-teal transition-all" placeholder="e.g. 55.4" value={waterPercent} onChange={(e) => setWaterPercent(e.target.value)} required />
                     </div>
                   </div>
 
-                  <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.8rem' }}>Save Body Analysis Data</button>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Protein Content %</label>
+                      <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-teal transition-all" placeholder="e.g. 17.5" value={proteinPercent} onChange={(e) => setProteinPercent(e.target.value)} required />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Metabolic Age</label>
+                      <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-teal transition-all" placeholder="e.g. 29" value={metabolicAge} onChange={(e) => setMetabolicAge(e.target.value)} required />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Bone Mass (kg)</label>
+                      <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-teal transition-all" placeholder="e.g. 3.2" value={boneMass} onChange={(e) => setBoneMass(e.target.value)} required />
+                    </div>
+                  </div>
+
+                  <button type="submit" className="w-full premium-gradient text-white font-bold py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-[0.98]">
+                    Save Body Analysis Data
+                  </button>
                 </form>
               )}
 
               {/* B. MEDICAL REPORT FORM */}
               {activeForm === 'medical' && (
-                <form onSubmit={handleMedicalReportSubmit}>
-                  <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <FileHeart size={18} color="var(--accent-emerald)" />
-                    Record Blood & Medical Laboratory Data
-                  </h3>
+                <form onSubmit={handleMedicalReportSubmit} className="animate-in fade-in duration-300">
+                  <div className="flex items-center gap-2 mb-6">
+                    <FileHeart size={20} className="text-brand-sky" />
+                    <h3 className="text-lg font-bold text-slate-800">Record Blood & Medical Laboratory Data</h3>
+                  </div>
 
-                  <h4 style={{ fontSize: '0.9rem', color: 'var(--accent-emerald)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem', marginBottom: '0.75rem' }}>Basic Metrics</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
-                    <div className="form-group">
-                      <label className="form-label">Blood Sugar (mg/dL)</label>
-                      <input type="number" className="form-control" placeholder="fasting" value={sugar} onChange={(e) => setSugar(e.target.value)} required />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">BP Systolic (mmHg)</label>
-                      <input type="number" className="form-control" placeholder="e.g. 120" value={bpSystolic} onChange={(e) => setBpSystolic(e.target.value)} required />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">BP Diastolic (mmHg)</label>
-                      <input type="number" className="form-control" placeholder="e.g. 80" value={bpDiastolic} onChange={(e) => setBpDiastolic(e.target.value)} required />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Hemoglobin (g/dL)</label>
-                      <input type="number" step="0.1" className="form-control" placeholder="e.g. 14.2" value={hemoglobin} onChange={(e) => setHemoglobin(e.target.value)} required />
+                  <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 mb-6">
+                    <h4 className="text-sm font-bold text-brand-sky flex items-center gap-2 mb-4">
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-sky"></span> Basic Metrics
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Blood Sugar (mg/dL)</label>
+                        <input type="number" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-sky transition-all" placeholder="fasting" value={sugar} onChange={(e) => setSugar(e.target.value)} required />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">BP Systolic (mmHg)</label>
+                        <input type="number" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-sky transition-all" placeholder="e.g. 120" value={bpSystolic} onChange={(e) => setBpSystolic(e.target.value)} required />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">BP Diastolic (mmHg)</label>
+                        <input type="number" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-sky transition-all" placeholder="e.g. 80" value={bpDiastolic} onChange={(e) => setBpDiastolic(e.target.value)} required />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Hemoglobin (g/dL)</label>
+                        <input type="number" step="0.1" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-sky transition-all" placeholder="e.g. 14.2" value={hemoglobin} onChange={(e) => setHemoglobin(e.target.value)} required />
+                      </div>
                     </div>
                   </div>
 
-                  <h4 style={{ fontSize: '0.9rem', color: 'var(--accent-violet)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem', marginBottom: '0.75rem', marginTop: '1.5rem' }}>Advanced Chemistry (Optional)</h4>
+                  <h4 className="text-sm font-bold text-brand-teal flex items-center gap-2 mb-4 px-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-teal"></span> Advanced Chemistry (Optional)
+                  </h4>
                   
                   {/* CBC & Lipids */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
-                    <div className="form-group">
-                      <label className="form-label">WBC Count (cells/mcL)</label>
-                      <input type="number" className="form-control" value={wbc} onChange={(e) => setWbc(e.target.value)} />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">WBC Count (cells/mcL)</label>
+                      <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={wbc} onChange={(e) => setWbc(e.target.value)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">RBC Count (million/mcL)</label>
-                      <input type="number" step="0.01" className="form-control" value={rbc} onChange={(e) => setRbc(e.target.value)} />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">RBC Count (M/mcL)</label>
+                      <input type="number" step="0.01" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={rbc} onChange={(e) => setRbc(e.target.value)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Platelets (k/mcL)</label>
-                      <input type="number" className="form-control" value={platelets} onChange={(e) => setPlatelets(e.target.value)} />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Platelets (k/mcL)</label>
+                      <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={platelets} onChange={(e) => setPlatelets(e.target.value)} />
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
-                    <div className="form-group">
-                      <label className="form-label">Total Cholesterol</label>
-                      <input type="number" className="form-control" value={cholesterol} onChange={(e) => setCholesterol(e.target.value)} />
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Total Cholesterol</label>
+                      <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={cholesterol} onChange={(e) => setCholesterol(e.target.value)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">HDL Cholesterol</label>
-                      <input type="number" className="form-control" value={hdl} onChange={(e) => setHdl(e.target.value)} />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">HDL Cholesterol</label>
+                      <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={hdl} onChange={(e) => setHdl(e.target.value)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">LDL Cholesterol</label>
-                      <input type="number" className="form-control" value={ldl} onChange={(e) => setLdl(e.target.value)} />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">LDL Cholesterol</label>
+                      <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={ldl} onChange={(e) => setLdl(e.target.value)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Triglycerides</label>
-                      <input type="number" className="form-control" value={triglycerides} onChange={(e) => setTriglycerides(e.target.value)} />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Triglycerides</label>
+                      <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={triglycerides} onChange={(e) => setTriglycerides(e.target.value)} />
                     </div>
                   </div>
 
                   {/* Vitamins & Thyroid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
-                    <div className="form-group">
-                      <label className="form-label">Vitamin D (ng/mL)</label>
-                      <input type="number" className="form-control" value={vitaminD} onChange={(e) => setVitaminD(e.target.value)} />
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Vit D (ng/mL)</label>
+                      <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={vitaminD} onChange={(e) => setVitaminD(e.target.value)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Vitamin B12 (pg/mL)</label>
-                      <input type="number" className="form-control" value={vitaminB12} onChange={(e) => setVitaminB12(e.target.value)} />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Vit B12 (pg/mL)</label>
+                      <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={vitaminB12} onChange={(e) => setVitaminB12(e.target.value)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">T3 Level</label>
-                      <input type="number" step="0.01" className="form-control" value={t3} onChange={(e) => setT3(e.target.value)} />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">T3 Level</label>
+                      <input type="number" step="0.01" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={t3} onChange={(e) => setT3(e.target.value)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">T4 Level</label>
-                      <input type="number" step="0.1" className="form-control" value={t4} onChange={(e) => setT4(e.target.value)} />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">T4 Level</label>
+                      <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={t4} onChange={(e) => setT4(e.target.value)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">TSH Level (uIU/mL)</label>
-                      <input type="number" step="0.01" className="form-control" value={tsh} onChange={(e) => setTsh(e.target.value)} />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">TSH (uIU/mL)</label>
+                      <input type="number" step="0.01" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={tsh} onChange={(e) => setTsh(e.target.value)} />
                     </div>
                   </div>
 
                   {/* Liver & Kidney & Hormones */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                    <div className="form-group">
-                      <label className="form-label">SGOT (U/L)</label>
-                      <input type="number" className="form-control" value={sgot} onChange={(e) => setSgot(e.target.value)} />
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">SGOT (U/L)</label>
+                      <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={sgot} onChange={(e) => setSgot(e.target.value)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">SGPT (U/L)</label>
-                      <input type="number" className="form-control" value={sgpt} onChange={(e) => setSgpt(e.target.value)} />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">SGPT (U/L)</label>
+                      <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={sgpt} onChange={(e) => setSgpt(e.target.value)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Bilirubin (mg/dL)</label>
-                      <input type="number" step="0.1" className="form-control" value={bilirubin} onChange={(e) => setBilirubin(e.target.value)} />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Bilirubin</label>
+                      <input type="number" step="0.1" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={bilirubin} onChange={(e) => setBilirubin(e.target.value)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Blood Urea</label>
-                      <input type="number" className="form-control" value={urea} onChange={(e) => setUrea(e.target.value)} />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Blood Urea</label>
+                      <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={urea} onChange={(e) => setUrea(e.target.value)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Serum Creatinine</label>
-                      <input type="number" step="0.01" className="form-control" value={creatinine} onChange={(e) => setCreatinine(e.target.value)} />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Creatinine</label>
+                      <input type="number" step="0.01" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal transition-all" value={creatinine} onChange={(e) => setCreatinine(e.target.value)} />
                     </div>
                   </div>
 
-                  <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.8rem' }}>Save Medical Lab Report</button>
+                  <button type="submit" className="w-full bg-brand-sky hover:bg-sky-600 text-white font-bold py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-[0.98]">
+                    Save Medical Lab Report
+                  </button>
                 </form>
               )}
 
             </div>
           ) : (
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', color: 'var(--text-secondary)' }}>
-              <ShieldAlert size={48} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
-              <p>Please select a client from the lookup directory to start entering health telemetry.</p>
+            <div className="glass-card flex flex-col items-center justify-center h-[calc(100vh-140px)] text-slate-400 border-dashed border-2 border-slate-200">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                <ShieldAlert size={40} className="text-slate-300" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-600 mb-1">No Client Selected</h3>
+              <p className="text-sm text-center max-w-sm">Please select a client from the lookup directory on the left to start entering health telemetry.</p>
             </div>
           )}
         </div>

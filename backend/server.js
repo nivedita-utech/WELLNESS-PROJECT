@@ -13,6 +13,11 @@ import wellnessRoutes from './routes/wellnessRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 import businessRoutes from './routes/businessRoutes.js';
 import communityRoutes from './routes/communityRoutes.js';
+import billingRoutes from './routes/billingRoutes.js';
+
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { protect, authorize } from './middlewares/authMiddleware.js';
 
 import User from './models/User.js';
 import BodyAnalysis from './models/BodyAnalysis.js';
@@ -29,6 +34,15 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+app.use(helmet());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  message: 'Too many requests from this IP, please try again later'
+});
+app.use('/api/', limiter);
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
@@ -49,7 +63,7 @@ app.get('/api', (req, res) => {
 // ============================================================
 // TEMPORARY SEED ENDPOINT — call GET /api/seed to populate DB
 // ============================================================
-app.get('/api/seed', async (req, res) => {
+app.get('/api/seed', protect, authorize('admin'), async (req, res) => {
   try {
     // Clear all collections
     await User.deleteMany({});
@@ -224,6 +238,7 @@ app.use('/api/wellness', wellnessRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/billing', billingRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

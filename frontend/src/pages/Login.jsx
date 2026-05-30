@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Activity, Mail, Lock, ShieldAlert, Award } from 'lucide-react';
+import { Activity, Mail, Lock, ShieldAlert } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -54,93 +54,110 @@ const Login = () => {
   };
 
   return (
-    <div className="login-screen">
-      <div className="card login-card card-glowing-emerald" style={{ padding: '2.5rem' }}>
-        <div className="login-header">
-          <div className="login-logo">
-            <Activity size={36} color="#10b981" />
-            <span>AURA</span>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-teal/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-sky/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div className="glass-card w-full max-w-md mx-4 relative z-10 p-8 sm:p-10">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-teal/10 mb-4">
+            <Activity size={32} className="text-brand-teal" />
           </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-            Next-Gen AI Digital Wellness Platform
-          </p>
+          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Welcome Back</h1>
+          <p className="text-slate-500 mt-2 text-sm">Sign in to Aura Wellness Platform</p>
         </div>
 
         {error && (
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.2)',
-            color: 'var(--status-red)',
-            padding: '0.75rem',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: '0.85rem',
-            marginBottom: '1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
+          <div className="bg-red-50 border border-red-100 text-red-600 p-3 rounded-xl text-sm mb-6 flex items-center gap-2">
             <ShieldAlert size={16} />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleLogin}>
-          <div className="form-group">
-            <label className="form-label" htmlFor="email">Email Address</label>
-            <div style={{ position: 'relative' }}>
-              <Mail size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="email">Email Address</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail size={18} className="text-slate-400" />
+              </div>
               <input
                 id="email"
                 type="email"
-                className="form-control"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-teal/20 focus:border-brand-teal transition-all"
                 placeholder="name@wellness.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{ paddingLeft: '2.5rem', width: '100%' }}
                 required
               />
             </div>
           </div>
 
-          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-            <label className="form-label" htmlFor="password">Password</label>
-            <div style={{ position: 'relative' }}>
-              <Lock size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="password">Password</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock size={18} className="text-slate-400" />
+              </div>
               <input
                 id="password"
                 type="password"
-                className="form-control"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-teal/20 focus:border-brand-teal transition-all"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ paddingLeft: '2.5rem', width: '100%' }}
                 required
               />
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem' }} disabled={btnLoading}>
-            {btnLoading ? 'Connecting securely...' : 'Sign In'}
+          <div className="flex items-center justify-between pb-2">
+            <div className="flex items-center">
+              <input id="remember" type="checkbox" className="h-4 w-4 text-brand-teal focus:ring-brand-teal border-slate-300 rounded" />
+              <label htmlFor="remember" className="ml-2 block text-sm text-slate-600">Remember me</label>
+            </div>
+            <div className="text-sm">
+              <a href="#" className="font-medium text-brand-teal hover:text-brand-teal/80">Forgot password?</a>
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={btnLoading}
+            className="w-full premium-gradient hover:opacity-90 text-white font-medium py-2.5 rounded-xl transition-all shadow-lg shadow-brand-teal/20 flex justify-center items-center disabled:opacity-50"
+          >
+            {btnLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>
-            Quick Demo Shortcuts
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-            <div onClick={() => fillCredentials('client1@wellness.com', 'client123')} className="shortcut-pill">
+        <div className="mt-8 pt-6 border-t border-slate-100">
+          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider text-center mb-4">Quick Demo Access</p>
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            <button 
+              onClick={() => fillCredentials('client1@wellness.com', 'client123')} 
+              className="text-xs py-2 px-3 bg-slate-50 hover:bg-brand-teal/5 text-slate-600 hover:text-brand-teal border border-slate-200 hover:border-brand-teal/30 rounded-lg transition-colors font-medium"
+            >
               Client Portal
-            </div>
-            <div onClick={() => fillCredentials('staff1@wellness.com', 'staff123')} className="shortcut-pill">
+            </button>
+            <button 
+              onClick={() => fillCredentials('staff1@wellness.com', 'staff123')} 
+              className="text-xs py-2 px-3 bg-slate-50 hover:bg-brand-teal/5 text-slate-600 hover:text-brand-teal border border-slate-200 hover:border-brand-teal/30 rounded-lg transition-colors font-medium"
+            >
               Staff Portal
-            </div>
-            <div onClick={() => fillCredentials('franchise1@wellness.com', 'franchise123')} className="shortcut-pill">
+            </button>
+            <button 
+              onClick={() => fillCredentials('franchise1@wellness.com', 'franchise123')} 
+              className="text-xs py-2 px-3 bg-slate-50 hover:bg-brand-teal/5 text-slate-600 hover:text-brand-teal border border-slate-200 hover:border-brand-teal/30 rounded-lg transition-colors font-medium"
+            >
               Franchise Portal
-            </div>
-            <div onClick={() => fillCredentials('admin@wellness.com', 'admin123')} className="shortcut-pill">
+            </button>
+            <button 
+              onClick={() => fillCredentials('admin@wellness.com', 'admin123')} 
+              className="text-xs py-2 px-3 bg-slate-50 hover:bg-brand-teal/5 text-slate-600 hover:text-brand-teal border border-slate-200 hover:border-brand-teal/30 rounded-lg transition-colors font-medium"
+            >
               Admin Platform
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -149,3 +166,4 @@ const Login = () => {
 };
 
 export default Login;
+

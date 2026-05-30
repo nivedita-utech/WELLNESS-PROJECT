@@ -426,3 +426,40 @@ export const addTransformation = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Get user analytics data for graphs
+// @route   GET /api/wellness/analytics/graphs
+// @access  Private
+export const getAnalyticsGraphs = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // Fetch Body Analysis Data (Weight, Fat, Muscle, etc)
+    const bodyData = await BodyAnalysis.find({ userId }).sort({ date: 1 });
+    
+    // Fetch Medical Report Data (BP, Sugar, Cholesterol, etc)
+    const medicalData = await MedicalReport.find({ userId }).sort({ date: 1 });
+    
+    // Format for Recharts
+    const formattedBodyData = bodyData.map(b => ({
+      date: new Date(b.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+      weight: b.weight,
+      bodyFat: b.bodyFat,
+      muscleMass: b.muscleMass,
+    }));
+    
+    const formattedMedicalData = medicalData.map(m => ({
+      date: new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+      sugar: m.sugar,
+      bpSystolic: m.bpSystolic,
+      bpDiastolic: m.bpDiastolic,
+    }));
+    
+    res.json({
+      bodyAnalysis: formattedBodyData,
+      medicalReports: formattedMedicalData,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
