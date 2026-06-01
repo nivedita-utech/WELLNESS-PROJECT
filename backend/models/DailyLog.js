@@ -73,7 +73,25 @@ const dailyLogSchema = new mongoose.Schema(
         fat: { type: Number, default: 0 },
         logged: { type: Boolean, default: false },
       },
+      detoxDrinks: {
+        name: { type: String, default: '' },
+        calories: { type: Number, default: 0 },
+        protein: { type: Number, default: 0 },
+        carbs: { type: Number, default: 0 },
+        fat: { type: Number, default: 0 },
+        logged: { type: Boolean, default: false },
+      },
     },
+    yogaMinutes: {
+      type: Number,
+      default: 0,
+    },
+    habits: [
+      {
+        name: String,
+        completed: { type: Boolean, default: false }
+      }
+    ],
   },
   {
     timestamps: true,

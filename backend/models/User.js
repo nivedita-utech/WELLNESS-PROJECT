@@ -45,6 +45,13 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User', // Franchise owner account
     },
+    waterStreak: {
+      type: Number,
+      default: 0,
+    },
+    lastWaterLogDate: {
+      type: String, // 'YYYY-MM-DD'
+    },
     status: {
       type: String,
       enum: ['Active', 'Inactive'],
