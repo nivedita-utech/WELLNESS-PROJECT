@@ -1,6 +1,7 @@
 import BusinessControl from '../models/BusinessControl.js';
 import Sale from '../models/Sale.js';
 import User from '../models/User.js';
+import Product from '../models/Product.js';
 
 // @desc    Get business configuration settings
 // @route   GET /api/business/control
@@ -213,6 +214,51 @@ export const getFranchiseDashboardData = async (req, res) => {
       totalRevenue,
       totalCommission,
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ============================================================
+// E-COMMERCE / SHOP (Products & Consultations)
+// ============================================================
+
+// @desc    Get all active products
+// @route   GET /api/business/products
+// @access  Private
+export const getProducts = async (req, res) => {
+  try {
+    const products = await Product.find({});
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Create a product or consultation
+// @route   POST /api/business/products
+// @access  Private (Admin/Franchise)
+export const createProduct = async (req, res) => {
+  try {
+    const { title, description, price, type, stock, imageUrl } = req.body;
+    let franchiseId = null;
+    
+    // If franchise is creating it, tie it to their franchise
+    if (req.user.role === 'franchise') {
+      franchiseId = req.user._id;
+    }
+
+    const product = await Product.create({
+      title,
+      description,
+      price,
+      type,
+      stock,
+      imageUrl,
+      franchiseId
+    });
+
+    res.status(201).json(product);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
