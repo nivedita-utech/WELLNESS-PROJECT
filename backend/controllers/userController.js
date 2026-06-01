@@ -4,7 +4,7 @@ import User from '../models/User.js';
 // @route   GET /api/users
 // @access  Private (Staff/Admin)
 export const getUsers = async (req, res) => {
-  const { search, role, franchiseId } = req.query;
+  const { search, role, franchiseId, status } = req.query;
   const query = {};
 
   if (search) {
@@ -21,6 +21,10 @@ export const getUsers = async (req, res) => {
 
   if (franchiseId) {
     query.franchiseId = franchiseId;
+  }
+
+  if (status) {
+    query.status = status;
   }
 
   try {
