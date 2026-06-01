@@ -26,6 +26,11 @@ const workoutProgramSchema = new mongoose.Schema(
       enum: ['Fat Loss', 'Muscle Gain', 'Fitness'],
       default: 'Fitness'
     },
+    mode: {
+      type: String,
+      enum: ['Home', 'Gym', 'Both'],
+      default: 'Gym'
+    },
     schedule: [
       {
         dayNumber: { type: Number, required: true },

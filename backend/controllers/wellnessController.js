@@ -266,7 +266,7 @@ export const getDailyLog = async (req, res) => {
 // @route   POST /api/wellness/daily-log
 // @access  Private
 export const saveDailyLog = async (req, res) => {
-  const { date, waterIntake, waterGoal, sleepHours, meditationMinutes, stepCount, stepGoal, mealsLogged } = req.body;
+  const { date, waterIntake, waterGoal, sleepHours, meditationMinutes, yogaMinutes, habits, stepCount, stepGoal, mealsLogged } = req.body;
   const userId = req.user._id;
 
   try {
@@ -307,6 +307,8 @@ export const saveDailyLog = async (req, res) => {
       log.waterGoal = waterGoal ?? log.waterGoal;
       log.sleepHours = sleepHours ?? log.sleepHours;
       log.meditationMinutes = meditationMinutes ?? log.meditationMinutes;
+      log.yogaMinutes = yogaMinutes ?? log.yogaMinutes;
+      log.habits = habits ?? log.habits;
       log.stepCount = stepCount ?? log.stepCount;
       log.stepGoal = stepGoal ?? log.stepGoal;
       log.mealsLogged = mealsLogged ?? log.mealsLogged;
@@ -323,6 +325,8 @@ export const saveDailyLog = async (req, res) => {
         waterGoal: waterGoal || 2500,
         sleepHours: sleepHours || 0,
         meditationMinutes: meditationMinutes || 0,
+        yogaMinutes: yogaMinutes || 0,
+        habits: habits || [],
         stepCount: stepCount || 0,
         stepGoal: stepGoal || 10000,
         mealsLogged: mealsLogged || {
@@ -330,13 +334,14 @@ export const saveDailyLog = async (req, res) => {
           lunch: { name: '', calories: 0, protein: 0, carbs: 0, fat: 0, logged: false },
           dinner: { name: '', calories: 0, protein: 0, carbs: 0, fat: 0, logged: false },
           snacks: { name: '', calories: 0, protein: 0, carbs: 0, fat: 0, logged: false },
+          detoxDrinks: { name: '', calories: 0, protein: 0, carbs: 0, fat: 0, logged: false },
         },
         challengesCompleted,
       });
     }
 
     // Award points and check badges
-    if (pointsToAdd > 0) {
+    if (pointsToAdd > 0 || challengesCompleted.includes('water')) {
       const user = await User.findById(userId);
       if (user) {
         user.points += pointsToAdd;
@@ -355,12 +360,23 @@ export const saveDailyLog = async (req, res) => {
           user.badges.push('Elite Health Guru');
         }
 
-        // Water Streak Check (simplified 3-day logic for demo purposes)
+        // True Water Streak Check logic
         if (challengesCompleted.includes('water')) {
-          const pastLogs = await DailyLog.find({ userId }).sort({ date: -1 }).limit(3);
-          const streak = pastLogs.filter(l => l.challengesCompleted.includes('water')).length;
+          if (user.lastWaterLogDate !== date) {
+            // Check if last log date was yesterday
+            const yesterday = new Date(date);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            
+            if (user.lastWaterLogDate === yesterdayStr) {
+              user.waterStreak += 1;
+            } else {
+              user.waterStreak = 1;
+            }
+            user.lastWaterLogDate = date;
+          }
           
-          if (streak >= 3 && !user.badges.includes('Water Streak Master')) {
+          if (user.waterStreak >= 3 && !user.badges.includes('Water Streak Master')) {
             user.badges.push('Water Streak Master');
             await Reward.create({
               userId,
@@ -402,14 +418,15 @@ export const getWorkoutPrograms = async (req, res) => {
 // @access  Private (Admin/Staff)
 export const assignWorkoutProgram = async (req, res) => {
   try {
-    const { userId, title, level, category, schedule } = req.body;
+    const { userId, title, level, category, schedule, mode } = req.body;
     const program = await WorkoutProgram.create({
       userId,
       assignedBy: req.user._id,
       title,
       level,
       category,
-      schedule
+      schedule,
+      mode
     });
     res.status(201).json(program);
   } catch (error) {

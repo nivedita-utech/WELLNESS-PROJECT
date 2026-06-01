@@ -52,6 +52,16 @@ const mealPlanSchema = new mongoose.Schema(
           fat: Number,
         }
       ],
+      detoxDrinks: [
+        {
+          name: String,
+          description: String,
+          calories: Number,
+          protein: Number,
+          carbs: Number,
+          fat: Number,
+        }
+      ],
       snacks: [
         {
           name: String,

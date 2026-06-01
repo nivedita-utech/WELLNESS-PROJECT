@@ -305,8 +305,10 @@ const UserDashboard = () => {
           waterGoal: dailyLog?.waterGoal || 2500,
           sleepHours: dailyLog?.sleepHours || 0,
           meditationMinutes: dailyLog?.meditationMinutes || 0,
+          yogaMinutes: dailyLog?.yogaMinutes || 0,
           stepCount: dailyLog?.stepCount || 0,
           mealsLogged: dailyLog?.mealsLogged,
+          habits: dailyLog?.habits || [],
         }),
       });
       const data = await res.json();
@@ -318,18 +320,54 @@ const UserDashboard = () => {
   };
 
   // Log Sleep & Steps
-  const updateStepsSleep = async (steps, sleep, meditation) => {
+  const updateStepsSleep = async (steps, sleep, meditation, yoga) => {
     try {
       const res = await authFetch('/api/wellness/daily-log', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           date,
           waterIntake: dailyLog?.waterIntake || 0,
           waterGoal: dailyLog?.waterGoal || 2500,
           sleepHours: sleep !== undefined ? sleep : dailyLog?.sleepHours || 0,
           meditationMinutes: meditation !== undefined ? meditation : dailyLog?.meditationMinutes || 0,
+          yogaMinutes: yoga !== undefined ? yoga : dailyLog?.yogaMinutes || 0,
           stepCount: steps !== undefined ? steps : dailyLog?.stepCount || 0,
           mealsLogged: dailyLog?.mealsLogged,
+          habits: dailyLog?.habits || [],
+        }),
+      });
+      const data = await res.json();
+      setDailyLog(data);
+      triggerPointsBadgeUpdate();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const toggleHabit = async (habitName) => {
+    const currentHabits = dailyLog?.habits || [];
+    let newHabits;
+    if (currentHabits.includes(habitName)) {
+      newHabits = currentHabits.filter(h => h !== habitName);
+    } else {
+      newHabits = [...currentHabits, habitName];
+    }
+    
+    try {
+      const res = await authFetch('/api/wellness/daily-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date,
+          waterIntake: dailyLog?.waterIntake || 0,
+          waterGoal: dailyLog?.waterGoal || 2500,
+          sleepHours: dailyLog?.sleepHours || 0,
+          meditationMinutes: dailyLog?.meditationMinutes || 0,
+          yogaMinutes: dailyLog?.yogaMinutes || 0,
+          stepCount: dailyLog?.stepCount || 0,
+          mealsLogged: dailyLog?.mealsLogged,
+          habits: newHabits,
         }),
       });
       const data = await res.json();
@@ -364,7 +402,9 @@ const UserDashboard = () => {
           waterGoal: dailyLog?.waterGoal || 2500,
           sleepHours: dailyLog?.sleepHours || 0,
           meditationMinutes: dailyLog?.meditationMinutes || 0,
+          yogaMinutes: dailyLog?.yogaMinutes || 0,
           stepCount: dailyLog?.stepCount || 0,
+          habits: dailyLog?.habits || [],
           mealsLogged,
         }),
       });
@@ -796,7 +836,7 @@ const UserDashboard = () => {
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all"
                     placeholder="e.g. 8000"
                     value={dailyLog?.stepCount || ''}
-                    onChange={(e) => updateStepsSleep(Number(e.target.value), undefined, undefined)}
+                    onChange={(e) => updateStepsSleep(Number(e.target.value), undefined, undefined, undefined)}
                   />
                   <span className="inline-flex items-center justify-center px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-500 shrink-0">steps</span>
                 </div>
@@ -811,7 +851,7 @@ const UserDashboard = () => {
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all"
                     placeholder="e.g. 7.5"
                     value={dailyLog?.sleepHours || ''}
-                    onChange={(e) => updateStepsSleep(undefined, Number(e.target.value), undefined)}
+                    onChange={(e) => updateStepsSleep(undefined, Number(e.target.value), undefined, undefined)}
                   />
                   <span className="inline-flex items-center justify-center px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-500 shrink-0">hours</span>
                 </div>
@@ -825,9 +865,41 @@ const UserDashboard = () => {
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all"
                     placeholder="e.g. 15"
                     value={dailyLog?.meditationMinutes || ''}
-                    onChange={(e) => updateStepsSleep(undefined, undefined, Number(e.target.value))}
+                    onChange={(e) => updateStepsSleep(undefined, undefined, Number(e.target.value), undefined)}
                   />
                   <span className="inline-flex items-center justify-center px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-500 shrink-0">mins</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Yoga (Minutes)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all"
+                    placeholder="e.g. 30"
+                    value={dailyLog?.yogaMinutes || ''}
+                    onChange={(e) => updateStepsSleep(undefined, undefined, undefined, Number(e.target.value))}
+                  />
+                  <span className="inline-flex items-center justify-center px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-500 shrink-0">mins</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Daily Habits</label>
+                <div className="flex flex-wrap gap-2">
+                  {['Read 10 Pages', 'No Sugar', 'Cold Shower', 'Journaling'].map(habit => {
+                    const isActive = dailyLog?.habits?.includes(habit);
+                    return (
+                      <button 
+                        key={habit}
+                        onClick={() => toggleHabit(habit)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${isActive ? 'bg-brand-teal text-white border-brand-teal' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-brand-teal'}`}
+                      >
+                        {habit}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>
@@ -986,6 +1058,18 @@ const UserDashboard = () => {
                       </div>
                     )
                   ))}
+                  {mealPlans[0].detoxDrinks && mealPlans[0].detoxDrinks.length > 0 && (
+                      <div className="bg-white rounded-xl p-3 border border-slate-100">
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Detox Drinks</p>
+                        {mealPlans[0].detoxDrinks.map((m, i) => (
+                          <div key={i}>
+                            <p className="text-sm font-semibold text-slate-800">{m.name}</p>
+                            <p className="text-xs text-slate-500">{m.description}</p>
+                            <p className="text-[10px] font-mono text-brand-teal mt-1">{m.timeToConsume}</p>
+                          </div>
+                        ))}
+                      </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1042,6 +1126,7 @@ const UserDashboard = () => {
                     <option value="lunch">Lunch</option>
                     <option value="dinner">Dinner</option>
                     <option value="snacks">Snacks</option>
+                    <option value="detoxDrinks">Detox Drinks</option>
                   </select>
                 </div>
                 <div>
@@ -1115,7 +1200,7 @@ const UserDashboard = () => {
                 <Calendar size={20} className="text-brand-teal" />
                 Your Structured Program: {programs[0].title}
               </h3>
-              <p className="text-xs text-slate-500 mb-4">{programs[0].category} - {programs[0].level}</p>
+              <p className="text-xs text-slate-500 mb-4">{programs[0].category} - {programs[0].level} {programs[0].mode ? `(${programs[0].mode})` : ''}</p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {programs[0].schedule.map((day, i) => (
