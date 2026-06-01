@@ -46,7 +46,21 @@ export const loginUser = async (req, res) => {
 // @route   POST /api/auth/register
 // @access  Public
 export const registerUser = async (req, res) => {
-  const { name, email, password, role, franchiseId } = req.body;
+  const { name, email, password, franchiseId } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'Name, email, and password are required' });
+  }
+
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: 'Invalid email format' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters' });
+  }
 
   try {
     const userExists = await User.findOne({ email });
@@ -55,17 +69,15 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Generate unique membership ID if the role is user
-    let membershipId;
-    if (role === 'user' || !role) {
-      membershipId = 'WELL-' + Math.floor(100000 + Math.random() * 900000);
-    }
+    // Force role to 'user' to prevent privilege escalation via mass assignment
+    const assignedRole = 'user';
+    const membershipId = 'WELL-' + Math.floor(100000 + Math.random() * 900000);
 
     const user = await User.create({
       name,
       email,
       password,
-      role: role || 'user',
+      role: assignedRole,
       membershipId,
       franchiseId: franchiseId || null,
       status: 'Active',

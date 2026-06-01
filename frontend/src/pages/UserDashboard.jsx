@@ -65,12 +65,12 @@ const UserDashboard = () => {
       return;
     }
 
-    // Remind every 15 seconds (15000 ms) for quick testing
+    // Remind every 2 hours (7200000 ms)
     const interval = setInterval(() => {
       if (tempWater < goal) {
         setShowWaterReminder(true);
       }
-    }, 15000);
+    }, 7200000);
 
     return () => clearInterval(interval);
   }, [tempWater, dailyLog?.waterGoal]);
@@ -215,7 +215,7 @@ const UserDashboard = () => {
     try {
       const res = await authFetch('/api/wellness/workouts');
       const data = await res.json();
-      setWorkouts(data);
+      setWorkouts(data.data || data);
     } catch (err) {
       console.error(err);
     }

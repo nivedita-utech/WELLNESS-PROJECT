@@ -100,6 +100,10 @@ export const getAuditLogs = async (req, res) => {
 export const processSale = async (req, res) => {
   const { amount, clientEmail, description, manualAssignment } = req.body;
 
+  if (typeof amount !== 'number' || amount <= 0) {
+    return res.status(400).json({ message: 'Invalid amount. Amount must be greater than 0.' });
+  }
+
   try {
     const client = await User.findOne({ email: clientEmail });
     if (!client) {
@@ -198,6 +202,11 @@ export const getFranchises = async (req, res) => {
 // @access  Private
 export const getFranchiseDashboardData = async (req, res) => {
   const franchiseId = req.params.franchiseId;
+
+  // IDOR protection: Ensure franchise can only access their own dashboard
+  if (req.user.role === 'franchise' && req.user._id.toString() !== franchiseId) {
+    return res.status(403).json({ message: 'Forbidden. You can only view your own dashboard.' });
+  }
 
   try {
     const sales = await Sale.find({ franchiseId, assignedTo: 'franchise' });

@@ -68,6 +68,10 @@ app.get('/api', (req, res) => {
 // TEMPORARY SEED ENDPOINT — call GET /api/seed to populate DB
 // ============================================================
 app.get('/api/seed', async (req, res) => {
+  if (process.env.NODE_ENV === 'production' && req.query.secret !== process.env.SEED_SECRET) {
+    return res.status(403).json({ message: 'Seeding is restricted in production.' });
+  }
+
   try {
     // Clear all collections
     await User.deleteMany({});
