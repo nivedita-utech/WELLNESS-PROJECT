@@ -794,7 +794,7 @@ const UserDashboard = () => {
                   <h1 className="text-4xl font-black text-brand-sky tracking-tighter">{tempWater}</h1>
                   <span className="text-sm font-medium text-slate-500">ml / {dailyLog?.waterGoal || 2500}</span>
                 </div>
-                <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+                <svg viewBox="0 0 192 192" className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
                    <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-brand-sky/20" />
                    <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={`${Math.min(100, (tempWater / (dailyLog?.waterGoal || 2500)) * 100) * 5.5} 600`} className="text-brand-sky drop-shadow" strokeLinecap="round" />
                 </svg>
