@@ -104,10 +104,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               Overview
             </Link>
             {/* These can be conditionally rendered based on role later */}
-            <Link to="/members" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/members') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
-              <Users size={20} />
-              Members
-            </Link>
+            {['admin', 'staff', 'franchise'].includes(user.role) && (
+              <Link to="/members" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/members') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+                <Users size={20} />
+                Members
+              </Link>
+            )}
             <Link to="/billing" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/billing') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
               <CreditCard size={20} />
               Billing
@@ -233,7 +235,7 @@ const App = () => {
           <Route
             path="/members"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin', 'staff', 'franchise']}>
                 <MainLayout>
                   <Members />
                 </MainLayout>
