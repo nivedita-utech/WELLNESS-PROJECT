@@ -104,20 +104,24 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               Overview
             </Link>
             {/* These can be conditionally rendered based on role later */}
-            {['admin', 'staff', 'franchise'].includes(user.role) && (
+            {['admin', 'franchise'].includes(user.role) && (
               <Link to="/members" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/members') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
                 <Users size={20} />
                 Members
               </Link>
             )}
-            <Link to="/billing" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/billing') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
-              <CreditCard size={20} />
-              Billing
-            </Link>
-            <Link to="/settings" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/settings') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
-              <SettingsIcon size={20} />
-              Settings
-            </Link>
+            {['admin', 'franchise', 'user'].includes(user.role) && (
+              <Link to="/billing" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/billing') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+                <CreditCard size={20} />
+                Billing
+              </Link>
+            )}
+            {['admin', 'franchise', 'user'].includes(user.role) && (
+              <Link to="/settings" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/settings') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+                <SettingsIcon size={20} />
+                Settings
+              </Link>
+            )}
           </nav>
 
           <div className="p-4 border-t border-slate-100">
@@ -235,7 +239,7 @@ const App = () => {
           <Route
             path="/members"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'staff', 'franchise']}>
+              <ProtectedRoute allowedRoles={['admin', 'franchise']}>
                 <MainLayout>
                   <Members />
                 </MainLayout>
@@ -246,7 +250,7 @@ const App = () => {
           <Route
             path="/billing"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin', 'franchise', 'user']}>
                 <MainLayout>
                   <Billing />
                 </MainLayout>
@@ -257,7 +261,7 @@ const App = () => {
           <Route
             path="/settings"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin', 'franchise', 'user']}>
                 <MainLayout>
                   <Settings />
                 </MainLayout>

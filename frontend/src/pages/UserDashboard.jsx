@@ -22,7 +22,8 @@ import {
   CheckCircle2,
   ShoppingBag,
   X,
-  Bell
+  Bell,
+  Sparkles
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
@@ -81,6 +82,11 @@ const UserDashboard = () => {
   const [mealProt, setMealProt] = useState(0);
   const [mealCarbs, setMealCarbs] = useState(0);
   const [mealFat, setMealFat] = useState(0);
+
+  // AI Diet Planner State
+  const [aiCurrentWeight, setAiCurrentWeight] = useState('');
+  const [aiGoal, setAiGoal] = useState('lose');
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   // Transformation input state
   const [weight, setWeight] = useState('');
@@ -255,6 +261,33 @@ const UserDashboard = () => {
     }
   };
 
+  const handleGenerateAIDietPlan = async (e) => {
+    e.preventDefault();
+    if (!aiCurrentWeight) return alert('Please enter your current weight');
+    
+    setIsGeneratingPlan(true);
+    try {
+      const res = await authFetch('/api/wellness/ai-diet-planner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentWeight: aiCurrentWeight, goal: aiGoal })
+      });
+      
+      if (res.ok) {
+        await fetchMealPlans(); // Refresh the meal plans list to show the new one
+        alert('AI Diet Plan successfully generated!');
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Error generating plan');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error while generating plan');
+    } finally {
+      setIsGeneratingPlan(false);
+    }
+  };
+
   // Log water increments
   const addWater = async (amount) => {
     const updatedWater = tempWater + amount;
@@ -263,6 +296,9 @@ const UserDashboard = () => {
     try {
       const res = await authFetch('/api/wellness/daily-log', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           date,
           waterIntake: updatedWater,
@@ -803,6 +839,64 @@ const UserDashboard = () => {
       {selectedTab === 'nutrition' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">
           
+          {/* AI Diet Generator Widget */}
+          <div className="glass-card lg:col-span-12 border-brand-teal/30 bg-gradient-to-r from-brand-teal/5 to-transparent">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-brand-teal text-white p-2 rounded-lg shadow-md">
+                <Sparkles size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-800">AI Diet & Macro Generator</h3>
+                <p className="text-sm text-slate-500">Enter your weight and goal. Our AI will mathematically compute your optimal macros and generate a daily plan.</p>
+              </div>
+            </div>
+            
+            <form onSubmit={handleGenerateAIDietPlan} className="flex flex-wrap md:flex-nowrap gap-4 items-end bg-white/60 p-4 rounded-xl border border-slate-100 shadow-sm">
+              <div className="w-full md:w-1/3">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Current Weight (KG)</label>
+                <input 
+                  type="number" 
+                  step="0.1"
+                  required
+                  placeholder="e.g. 75"
+                  className="w-full border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:border-brand-teal focus:ring-brand-teal"
+                  value={aiCurrentWeight}
+                  onChange={(e) => setAiCurrentWeight(e.target.value)}
+                />
+              </div>
+              <div className="w-full md:w-1/3">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Fitness Goal</label>
+                <select 
+                  className="w-full border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:border-brand-teal focus:ring-brand-teal"
+                  value={aiGoal}
+                  onChange={(e) => setAiGoal(e.target.value)}
+                >
+                  <option value="lose">Weight Loss (Deficit)</option>
+                  <option value="maintain">Maintain Current Weight</option>
+                  <option value="gain">Muscle Gain (Surplus)</option>
+                </select>
+              </div>
+              <div className="w-full md:w-1/3">
+                <button 
+                  type="submit" 
+                  disabled={isGeneratingPlan}
+                  className="w-full premium-gradient text-white font-bold py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-70 flex items-center justify-center gap-2"
+                >
+                  {isGeneratingPlan ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={16} /> Generate Plan
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
           {/* Daily Tracker Rings */}
           <div className="glass-card lg:col-span-4">
             <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">

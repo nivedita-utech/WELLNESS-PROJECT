@@ -17,6 +17,10 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
+      if (user.status === 'Inactive') {
+        return res.status(403).json({ message: 'Your account is inactive. Please contact support.' });
+      }
+
       res.json({
         _id: user._id,
         name: user.name,
