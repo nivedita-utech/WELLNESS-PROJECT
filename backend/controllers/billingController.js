@@ -1,5 +1,7 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
+import Invoice from '../models/Invoice.js';
+import Transaction from '../models/Transaction.js';
 
 dotenv.config();
 
@@ -53,5 +55,65 @@ export const createCheckoutSession = async (req, res) => {
   } catch (error) {
     console.error('Stripe error:', error);
     res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get billing dashboard statistics
+// @route   GET /api/billing/dashboard
+// @access  Private/Admin
+export const getBillingDashboardStats = async (req, res) => {
+  try {
+    const totalRevenueResult = await Invoice.aggregate([
+      { $match: { status: "Paid" } },
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+    ]);
+    const totalRevenue = totalRevenueResult.length > 0 ? totalRevenueResult[0].total : 0;
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const todayRevenueResult = await Invoice.aggregate([
+      { $match: { status: "Paid", createdAt: { $gte: startOfDay } } },
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+    ]);
+    const todayRevenue = todayRevenueResult.length > 0 ? todayRevenueResult[0].total : 0;
+
+    const pendingPaymentsResult = await Invoice.aggregate([
+      { $match: { status: "Pending" } },
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+    ]);
+    const pendingPayments = pendingPaymentsResult.length > 0 ? pendingPaymentsResult[0].total : 0;
+
+    const paidInvoicesCount = await Invoice.countDocuments({ status: "Paid" });
+    const overdueInvoicesCount = await Invoice.countDocuments({ status: "Overdue" });
+
+    // Monthly revenue chart data (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const monthlyRevenue = await Invoice.aggregate([
+      { $match: { status: "Paid", createdAt: { $gte: sixMonthsAgo } } },
+      {
+        $group: {
+          _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+          revenue: { $sum: "$totalAmount" },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]);
+
+    const recentTransactions = await Transaction.find().sort({ createdAt: -1 }).limit(5).populate("customer", "name email");
+
+    res.json({
+      totalRevenue,
+      todayRevenue,
+      pendingPayments,
+      paidInvoicesCount,
+      overdueInvoicesCount,
+      monthlyRevenue,
+      recentTransactions,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
