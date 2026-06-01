@@ -20,7 +20,9 @@ import {
   Moon,
   Compass as CalmIcon,
   CheckCircle2,
-  ShoppingBag
+  ShoppingBag,
+  X,
+  Bell
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
@@ -52,6 +54,25 @@ const UserDashboard = () => {
   
   // Hydration state
   const [tempWater, setTempWater] = useState(0);
+  const [showWaterReminder, setShowWaterReminder] = useState(false);
+  
+  // Water Reminder Engine
+  useEffect(() => {
+    const goal = dailyLog?.waterGoal || 2500;
+    if (tempWater >= goal) {
+      setShowWaterReminder(false);
+      return;
+    }
+
+    // Remind every 15 seconds (15000 ms) for quick testing
+    const interval = setInterval(() => {
+      if (tempWater < goal) {
+        setShowWaterReminder(true);
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [tempWater, dailyLog?.waterGoal]);
 
   // Meal Log State
   const [mealCategory, setMealCategory] = useState('breakfast');
@@ -1532,6 +1553,40 @@ const UserDashboard = () => {
                Store is currently empty.
              </div>
           )}
+        </div>
+      )}
+
+      {/* Water Reminder Toast */}
+      {showWaterReminder && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-8 fade-in duration-500">
+          <div className="glass-card premium-gradient text-white p-5 shadow-2xl flex items-start gap-4 border border-white/20">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm">
+              <Droplet size={20} className="text-white fill-white/50" />
+            </div>
+            <div className="flex-1 pr-6">
+              <h4 className="text-sm font-bold tracking-wide mb-1 flex items-center gap-2">
+                <Bell size={14} className="animate-pulse" /> Hydration Reminder
+              </h4>
+              <p className="text-xs text-white/80 mb-3">
+                You're falling behind your {dailyLog?.waterGoal || 2500}ml goal. Time for a quick drink!
+              </p>
+              <button
+                onClick={() => {
+                  addWater(250);
+                  setShowWaterReminder(false);
+                }}
+                className="bg-white/20 hover:bg-white/30 backdrop-blur-md px-4 py-2 rounded-lg text-xs font-bold transition-colors w-full border border-white/10 text-center"
+              >
+                +250ml Log Now
+              </button>
+            </div>
+            <button
+              onClick={() => setShowWaterReminder(false)}
+              className="absolute top-3 right-3 text-white/50 hover:text-white transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
       )}
 
