@@ -1,4 +1,7 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
+
+dns.setServers(['8.8.8.8', '1.1.1.1']); // Force Node to use Google/Cloudflare DNS to resolve Atlas SRV records
 
 const connectDB = async () => {
   try {
