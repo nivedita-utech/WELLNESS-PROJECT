@@ -58,7 +58,7 @@ const StaffDashboard = () => {
     try {
       const res = await authFetch(`/api/users?role=user&search=${searchQuery}&status=Active`);
       const data = await res.json();
-      setUsers(data);
+      setUsers(data.data || data);
     } catch (err) {
       console.error(err);
     }
