@@ -149,14 +149,6 @@ const Header = ({ setIsOpen }) => {
         >
           <Menu size={24} />
         </button>
-        <div className="hidden sm:flex items-center px-3 py-2 bg-slate-100 rounded-lg text-slate-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand-sky/20 focus-within:text-slate-800 transition-all">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="bg-transparent border-none outline-none ml-2 text-sm w-64 placeholder:text-slate-400"
-          />
-        </div>
       </div>
 
       <div className="flex items-center gap-4">
@@ -177,7 +169,7 @@ const MainLayout = ({ children }) => {
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <div className="flex-1 flex flex-col lg:pl-64 min-w-0 transition-all duration-300">
         <Header setIsOpen={setIsSidebarOpen} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full">
           {children}
         </main>
       </div>
