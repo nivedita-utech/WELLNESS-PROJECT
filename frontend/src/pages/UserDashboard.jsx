@@ -19,7 +19,8 @@ import {
   Users,
   Moon,
   Compass as CalmIcon,
-  CheckCircle2
+  CheckCircle2,
+  ShoppingBag
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
@@ -42,6 +43,12 @@ const UserDashboard = () => {
   
   // Analytics graphs
   const [graphData, setGraphData] = useState(null);
+  
+  // New features state
+  const [programs, setPrograms] = useState([]);
+  const [mealPlans, setMealPlans] = useState([]);
+  const [rewards, setRewards] = useState([]);
+  const [products, setProducts] = useState([]);
   
   // Hydration state
   const [tempWater, setTempWater] = useState(0);
@@ -88,7 +95,43 @@ const UserDashboard = () => {
     fetchQuote();
     fetchRecommendations();
     fetchGraphData();
+    fetchPrograms();
+    fetchMealPlans();
+    fetchRewards();
+    fetchProducts();
   }, [date]);
+
+  const fetchPrograms = async () => {
+    try {
+      const res = await authFetch('/api/wellness/programs');
+      const data = await res.json();
+      setPrograms(data);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchMealPlans = async () => {
+    try {
+      const res = await authFetch('/api/wellness/meal-plans');
+      const data = await res.json();
+      setMealPlans(data);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchRewards = async () => {
+    try {
+      const res = await authFetch('/api/wellness/rewards');
+      const data = await res.json();
+      setRewards(data);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const res = await authFetch('/api/business/products');
+      const data = await res.json();
+      setProducts(data);
+    } catch (err) { console.error(err); }
+  };
 
   const fetchQuote = async () => {
     try {
@@ -430,6 +473,7 @@ const UserDashboard = () => {
     { id: 'healthdocs', label: 'Health Locker', icon: FileText },
     { id: 'community', label: 'Social & Leaderboard', icon: Users },
     { id: 'analytics', label: 'Analytics & Graphs', icon: TrendingUp },
+    { id: 'shop', label: 'Ecosystem Store', icon: ShoppingBag },
   ];
 
   return (
@@ -470,7 +514,7 @@ const UserDashboard = () => {
       </div>
 
       {/* Primary Dashboard Navigation Tabs */}
-      <div className="flex space-x-1 bg-slate-200/50 p-1 rounded-xl w-full overflow-x-auto">
+      <div className="flex flex-wrap gap-1 bg-slate-200/50 p-1 rounded-xl w-full">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -595,6 +639,27 @@ const UserDashboard = () => {
             </div>
 
             <div className="mt-auto border-t border-slate-100 pt-5">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Rewards & Certificates</h4>
+              {rewards.length > 0 ? (
+                <div className="space-y-2">
+                  {rewards.map((r, i) => (
+                    <div key={i} className="flex items-center gap-3 bg-amber-50 rounded-xl p-3 border border-amber-100">
+                      <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">
+                        <Award size={16} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-amber-700">{r.title}</p>
+                        <p className="text-xs text-amber-600/70">{new Date(r.issueDate).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 italic">No formal certificates yet.</p>
+              )}
+            </div>
+
+            <div className="mt-4 border-t border-slate-100 pt-5">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Daily Motivation Quote</h4>
               {quote ? (
                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 relative">
@@ -729,11 +794,18 @@ const UserDashboard = () => {
                   <h1 className="text-4xl font-black text-brand-sky tracking-tighter">{tempWater}</h1>
                   <span className="text-sm font-medium text-slate-500">ml / {dailyLog?.waterGoal || 2500}</span>
                 </div>
-                {/* SVG Progress Circle would go here natively, simulating with a colored ring overlay */}
                 <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
                    <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-brand-sky/20" />
                    <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={`${Math.min(100, (tempWater / (dailyLog?.waterGoal || 2500)) * 100) * 5.5} 600`} className="text-brand-sky drop-shadow" strokeLinecap="round" />
                 </svg>
+              </div>
+              
+              <div className="w-full bg-slate-50 rounded-xl p-4 border border-slate-100 mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-slate-500 uppercase">Water Streak</p>
+                  <p className="text-sm font-medium text-slate-700">Hit target 3 days for a reward!</p>
+                </div>
+                <Award className={user.badges?.includes('Water Streak Master') ? 'text-brand-sky' : 'text-slate-300'} />
               </div>
               
               <div className="grid grid-cols-3 gap-2 w-full mb-4">
@@ -778,8 +850,33 @@ const UserDashboard = () => {
               </div>
             </div>
 
+            {/* My Meal Plan */}
+            {mealPlans.length > 0 && (
+              <div className="mt-8 bg-brand-teal/5 rounded-2xl p-5 border border-brand-teal/20">
+                <h3 className="text-md font-bold text-brand-teal mb-4 flex items-center gap-2">
+                  <BookOpen size={18} /> Coach Assigned Meal Plan
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {['breakfast', 'lunch', 'dinner', 'snacks'].map(meal => (
+                    mealPlans[0].meals[meal] && mealPlans[0].meals[meal].length > 0 && (
+                      <div key={meal} className="bg-white rounded-xl p-3 border border-slate-100">
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{meal}</p>
+                        {mealPlans[0].meals[meal].map((m, i) => (
+                          <div key={i}>
+                            <p className="text-sm font-semibold text-slate-800">{m.name}</p>
+                            <p className="text-xs text-slate-500">{m.description}</p>
+                            <p className="text-[10px] font-mono text-slate-400 mt-1">{m.calories} cal | P: {m.protein}g | C: {m.carbs}g | F: {m.fat}g</p>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* List logged meals */}
-            <h4 className="text-sm font-bold text-slate-700 mb-3">Today's Log</h4>
+            <h4 className="text-sm font-bold text-slate-700 mt-8 mb-3">Today's Log</h4>
             <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -896,9 +993,34 @@ const UserDashboard = () => {
 
       {/* 3. WORKOUT VIDEO STREAMING */}
       {selectedTab === 'workouts' && (
-        <div className="animate-in fade-in duration-500">
-          <div className="flex space-x-2 overflow-x-auto pb-4 mb-2">
-            {['All', 'Fat Loss', 'Muscle Gain', 'Yoga & Breathing', 'Meditation'].map((cat) => (
+        <div className="animate-in fade-in duration-500 space-y-6">
+          {programs.length > 0 && (
+            <div className="glass-card bg-brand-teal/5 border-brand-teal/20">
+              <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                <Calendar size={20} className="text-brand-teal" />
+                Your Structured Program: {programs[0].title}
+              </h3>
+              <p className="text-xs text-slate-500 mb-4">{programs[0].category} - {programs[0].level}</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {programs[0].schedule.map((day, i) => (
+                  <div key={i} className={`p-4 rounded-xl border ${day.completed ? 'bg-brand-teal/10 border-brand-teal text-brand-teal' : 'bg-white border-slate-100'}`}>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-bold uppercase">Day {day.dayNumber}</span>
+                      {day.completed && <CheckCircle2 size={16} />}
+                    </div>
+                    <p className={`text-sm font-bold ${day.completed ? 'text-brand-teal' : 'text-slate-700'}`}>{day.title}</p>
+                    <p className="text-xs text-slate-500 mt-1">{day.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Video Library</h3>
+            <div className="flex space-x-2 overflow-x-auto pb-4 mb-2">
+              {['All', 'Fat Loss', 'Muscle Gain', 'Yoga & Breathing', 'Meditation'].map((cat) => (
               <button 
                 key={cat} 
                 onClick={() => setVideoCategory(cat)} 
@@ -950,6 +1072,7 @@ const UserDashboard = () => {
                 <p className="text-sm text-slate-500">Try selecting a different category.</p>
               </div>
             )}
+          </div>
           </div>
         </div>
       )}
@@ -1378,6 +1501,37 @@ const UserDashboard = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 7. ECOSYSTEM STORE */}
+      {selectedTab === 'shop' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
+          {products.map(product => (
+            <div key={product._id} className="glass-card flex flex-col p-0 overflow-hidden group">
+              <div className="h-40 bg-slate-100 flex items-center justify-center p-6 relative">
+                <ShoppingBag size={48} className="text-slate-300 group-hover:text-brand-teal transition-colors" />
+                <span className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-600 uppercase tracking-wider shadow-sm">
+                  {product.type}
+                </span>
+              </div>
+              <div className="p-5 flex flex-col flex-grow">
+                <h3 className="text-lg font-bold text-slate-800 mb-2">{product.title}</h3>
+                <p className="text-sm text-slate-500 mb-4">{product.description}</p>
+                <div className="mt-auto flex justify-between items-center pt-4 border-t border-slate-100">
+                  <span className="text-xl font-black text-brand-teal">${product.price}</span>
+                  <button className="bg-slate-900 hover:bg-brand-teal text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                    Purchase
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {products.length === 0 && (
+             <div className="col-span-full text-center py-12 text-slate-500 glass-card">
+               Store is currently empty.
+             </div>
+          )}
         </div>
       )}
 

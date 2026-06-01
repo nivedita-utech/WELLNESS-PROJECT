@@ -4,6 +4,9 @@ import WorkoutVideo from '../models/WorkoutVideo.js';
 import User from '../models/User.js';
 import BodyAnalysis from '../models/BodyAnalysis.js';
 import MedicalReport from '../models/MedicalReport.js';
+import WorkoutProgram from '../models/WorkoutProgram.js';
+import MealPlan from '../models/MealPlan.js';
+import Reward from '../models/Reward.js';
 
 // ============================================================
 // WELLNESS QUOTES — curated bank of 20 quotes, returned randomly
@@ -352,11 +355,115 @@ export const saveDailyLog = async (req, res) => {
           user.badges.push('Elite Health Guru');
         }
 
+        // Water Streak Check (simplified 3-day logic for demo purposes)
+        if (challengesCompleted.includes('water')) {
+          const pastLogs = await DailyLog.find({ userId }).sort({ date: -1 }).limit(3);
+          const streak = pastLogs.filter(l => l.challengesCompleted.includes('water')).length;
+          
+          if (streak >= 3 && !user.badges.includes('Water Streak Master')) {
+            user.badges.push('Water Streak Master');
+            await Reward.create({
+              userId,
+              type: 'Milestone',
+              title: '3-Day Hydration Streak',
+              description: 'You hit your water goal 3 days in a row!'
+            });
+          }
+        }
+
         await user.save();
       }
     }
 
     res.json(log);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ============================================================
+// WORKOUT PROGRAMS (Structured)
+// ============================================================
+
+// @desc    Get assigned workout programs for user
+// @route   GET /api/wellness/programs
+// @access  Private
+export const getWorkoutPrograms = async (req, res) => {
+  try {
+    const programs = await WorkoutProgram.find({ userId: req.user._id }).populate('schedule.videoIds');
+    res.json(programs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Assign a workout program to a user
+// @route   POST /api/wellness/programs
+// @access  Private (Admin/Staff)
+export const assignWorkoutProgram = async (req, res) => {
+  try {
+    const { userId, title, level, category, schedule } = req.body;
+    const program = await WorkoutProgram.create({
+      userId,
+      assignedBy: req.user._id,
+      title,
+      level,
+      category,
+      schedule
+    });
+    res.status(201).json(program);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ============================================================
+// MEAL PLANS
+// ============================================================
+
+// @desc    Get assigned meal plans for user
+// @route   GET /api/wellness/meal-plans
+// @access  Private
+export const getMealPlans = async (req, res) => {
+  try {
+    const plans = await MealPlan.find({ userId: req.user._id });
+    res.json(plans);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Assign a meal plan to a user
+// @route   POST /api/wellness/meal-plans
+// @access  Private (Admin/Staff)
+export const assignMealPlan = async (req, res) => {
+  try {
+    const { userId, dailyCalorieTarget, macroSplit, meals, detoxDrinks } = req.body;
+    const plan = await MealPlan.create({
+      userId,
+      assignedBy: req.user._id,
+      dailyCalorieTarget,
+      macroSplit,
+      meals,
+      detoxDrinks
+    });
+    res.status(201).json(plan);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ============================================================
+// REWARDS / CERTIFICATES
+// ============================================================
+
+// @desc    Get user rewards and certificates
+// @route   GET /api/wellness/rewards
+// @access  Private
+export const getRewards = async (req, res) => {
+  try {
+    const rewards = await Reward.find({ userId: req.user._id }).sort({ issueDate: -1 });
+    res.json(rewards);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
