@@ -51,7 +51,7 @@ const PaymentsPage = () => {
         <input 
           type="text" 
           placeholder="Search by ID, Customer, or Invoice..." 
-          className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-teal dark:text-white transition-all"
+          className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-teal transition-all"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -61,7 +61,7 @@ const PaymentsPage = () => {
       <div className="glass-card !p-0 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+            <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4 font-medium">Transaction Details</th>
                 <th className="px-6 py-4 font-medium">Customer</th>
@@ -71,7 +71,7 @@ const PaymentsPage = () => {
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
@@ -82,14 +82,14 @@ const PaymentsPage = () => {
                 </tr>
               ) : filteredPayments.length > 0 ? (
                 filteredPayments.map((payment) => (
-                  <tr key={payment._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                  <tr key={payment._id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                          <CreditCard className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                        <div className="p-2 bg-slate-100 rounded-lg">
+                          <CreditCard className="w-4 h-4 text-slate-600" />
                         </div>
                         <div>
-                          <p className="font-medium text-slate-900 dark:text-white">{payment.transactionId || 'N/A'}</p>
+                          <p className="font-medium text-slate-900">{payment.transactionId || 'N/A'}</p>
                           <p className="text-xs text-slate-500">{new Date(payment.createdAt).toLocaleString()}</p>
                         </div>
                       </div>
@@ -97,11 +97,11 @@ const PaymentsPage = () => {
                     <td className="px-6 py-4">
                       <span className="font-medium">{payment.customer?.name || 'Unknown'}</span>
                     </td>
-                    <td className="px-6 py-4 text-brand-teal dark:text-brand-sky font-medium">
+                    <td className="px-6 py-4 text-brand-teal font-medium">
                       {payment.invoice?.invoiceNumber || '-'}
                     </td>
-                    <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">
-                      ${payment.amount.toFixed(2)}
+                    <td className="px-6 py-4 font-semibold text-slate-900">
+                      ₹{payment.amount.toFixed(2)}
                       <p className="text-xs text-slate-500 font-normal mt-0.5">{payment.paymentMethod}</p>
                     </td>
                     <td className="px-6 py-4">
@@ -112,7 +112,7 @@ const PaymentsPage = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {payment.status === 'Paid' && (
-                        <button className="text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 px-3 py-1.5 rounded-lg transition-colors">
+                        <button className="text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-colors">
                           Issue Refund
                         </button>
                       )}

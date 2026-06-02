@@ -41,7 +41,7 @@ const Members = () => {
       const res = await authFetch('/api/users');
       if (res.ok) {
         const data = await res.json();
-        setMembers(data);
+        setMembers(data.data || data);
       } else {
         const errorData = await res.json();
         setError(errorData.message || 'Failed to fetch members');
