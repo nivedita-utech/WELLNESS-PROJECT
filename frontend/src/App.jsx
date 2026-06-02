@@ -11,6 +11,33 @@ import Billing from './pages/Billing';
 import Settings from './pages/Settings';
 import { Activity, LogOut, LayoutDashboard, Bell, Search, Menu, X, Settings as SettingsIcon, Users, CreditCard } from 'lucide-react';
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+  componentDidCatch(error, errorInfo) {
+    this.setState({ hasError: true, error, errorInfo });
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 bg-red-50 text-red-900 border border-red-200 rounded-xl m-8">
+          <h2 className="text-2xl font-bold mb-4">Something went wrong.</h2>
+          <details open style={{ whiteSpace: 'pre-wrap' }}>
+            <summary className="font-semibold cursor-pointer mb-2">Show Error Details</summary>
+            {this.state.error && this.state.error.toString()}
+            <br />
+            {this.state.errorInfo && this.state.errorInfo.componentStack}
+          </details>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useContext(AuthContext);
 
@@ -244,7 +271,9 @@ const App = () => {
             element={
               <ProtectedRoute allowedRoles={['admin', 'franchise', 'user']}>
                 <MainLayout>
-                  <Billing />
+                  <ErrorBoundary>
+                    <Billing />
+                  </ErrorBoundary>
                 </MainLayout>
               </ProtectedRoute>
             }

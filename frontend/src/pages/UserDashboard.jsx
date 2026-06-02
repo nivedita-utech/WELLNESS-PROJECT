@@ -1719,7 +1719,7 @@ const UserDashboard = () => {
                 <h3 className="text-lg font-bold text-slate-800 mb-2">{product.title}</h3>
                 <p className="text-sm text-slate-500 mb-4">{product.description}</p>
                 <div className="mt-auto flex justify-between items-center pt-4 border-t border-slate-100">
-                  <span className="text-xl font-black text-brand-teal">${product.price}</span>
+                  <span className="text-xl font-black text-brand-teal">₹{product.price}</span>
                   <button className="bg-slate-900 hover:bg-brand-teal text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
                     Purchase
                   </button>

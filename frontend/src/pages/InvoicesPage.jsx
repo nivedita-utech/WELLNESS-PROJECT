@@ -68,10 +68,10 @@ const InvoicesPage = () => {
 
   const getStatusBadge = (status) => {
     switch(status) {
-      case 'Paid': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400';
-      case 'Pending': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400';
-      case 'Overdue': return 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400';
-      default: return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400';
+      case 'Paid': return 'bg-emerald-100 text-emerald-700';
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'Overdue': return 'bg-rose-100 text-rose-700';
+      default: return 'bg-slate-100 text-slate-700';
     }
   };
 
@@ -120,7 +120,7 @@ const InvoicesPage = () => {
       <div className="glass-card !p-0 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+            <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4 font-medium">Invoice Number</th>
                 <th className="px-6 py-4 font-medium">Customer</th>
@@ -130,7 +130,7 @@ const InvoicesPage = () => {
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
@@ -142,21 +142,21 @@ const InvoicesPage = () => {
                 </tr>
               ) : filteredInvoices.length > 0 ? (
                 filteredInvoices.map((inv) => (
-                  <tr key={inv._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
-                    <td className="px-6 py-4 font-medium text-brand-teal dark:text-brand-sky">{inv.invoiceNumber}</td>
+                  <tr key={inv._id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-brand-teal">{inv.invoiceNumber}</td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="font-medium text-slate-900 dark:text-white">{inv.customer?.name || 'Unknown'}</span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">{inv.customer?.email}</span>
+                        <span className="font-medium text-slate-900">{inv.customer?.name || 'Unknown'}</span>
+                        <span className="text-xs text-slate-500">{inv.customer?.email}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">${inv.totalAmount.toFixed(2)}</td>
+                    <td className="px-6 py-4 font-semibold text-slate-900">₹{inv.totalAmount.toFixed(2)}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadge(inv.status)}`}>
                         {inv.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
+                    <td className="px-6 py-4 text-slate-500">
                       {new Date(inv.dueDate).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
