@@ -1,5 +1,5 @@
 import express from 'express';
-import { getWorkouts, getDailyLog, saveDailyLog, getTransformations, getUserTransformations, addTransformation, getQuote, getRecommendations, addWorkout, deleteWorkout, getAnalyticsGraphs } from '../controllers/wellnessController.js';
+import { getWorkouts, getDailyLog, saveDailyLog, getTransformations, getUserTransformations, addTransformation, getQuote, getRecommendations, addWorkout, deleteWorkout, getAnalyticsGraphs, getWorkoutPrograms, assignWorkoutProgram, getMealPlans, assignMealPlan, getRewards, generateAIDietPlan } from '../controllers/wellnessController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { upload } from '../middlewares/uploadMiddleware.js';
 
@@ -22,6 +22,22 @@ router.delete('/workouts/:id', protect, authorize('admin'), deleteWorkout);
 // Daily Logs
 router.get('/daily-log/:date', protect, getDailyLog);
 router.post('/daily-log', protect, saveDailyLog);
+
+// Structured Programs
+router.route('/programs')
+  .get(protect, getWorkoutPrograms)
+  .post(protect, authorize('admin', 'staff'), assignWorkoutProgram);
+
+// Meal Plans
+router.route('/meal-plans')
+  .get(protect, getMealPlans)
+  .post(protect, authorize('admin', 'staff'), assignMealPlan);
+
+// AI Diet Planner
+router.post('/ai-diet-planner', protect, generateAIDietPlan);
+
+// Rewards & Certificates
+router.get('/rewards', protect, getRewards);
 
 // Transformation
 router.route('/transformation')

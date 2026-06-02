@@ -28,6 +28,10 @@ import BusinessControl from './models/BusinessControl.js';
 import Sale from './models/Sale.js';
 import Community from './models/Community.js';
 import WorkoutVideo from './models/WorkoutVideo.js';
+import WorkoutProgram from './models/WorkoutProgram.js';
+import MealPlan from './models/MealPlan.js';
+import Reward from './models/Reward.js';
+import Product from './models/Product.js';
 
 dotenv.config();
 
@@ -63,7 +67,11 @@ app.get('/api', (req, res) => {
 // ============================================================
 // TEMPORARY SEED ENDPOINT — call GET /api/seed to populate DB
 // ============================================================
-app.get('/api/seed', protect, authorize('admin'), async (req, res) => {
+app.get('/api/seed', async (req, res) => {
+  if (process.env.NODE_ENV === 'production' && req.query.secret !== process.env.SEED_SECRET) {
+    return res.status(403).json({ message: 'Seeding is restricted in production.' });
+  }
+
   try {
     // Clear all collections
     await User.deleteMany({});
@@ -75,6 +83,10 @@ app.get('/api/seed', protect, authorize('admin'), async (req, res) => {
     await Sale.deleteMany({});
     await Community.deleteMany({});
     await WorkoutVideo.deleteMany({});
+    await WorkoutProgram.deleteMany({});
+    await MealPlan.deleteMany({});
+    await Reward.deleteMany({});
+    await Product.deleteMany({});
 
     // Business Control
     const businessControl = await BusinessControl.create({
@@ -214,6 +226,62 @@ app.get('/api/seed', protect, authorize('admin'), async (req, res) => {
     // Transformations
     await Transformation.create({ userId: client1._id, date: new Date(Date.now() - 14 * 86400000), weight: 82.5, chest: 41.5, waist: 36.2, hips: 39.5, biceps: 14.1, notes: 'Starting my wellness journey.' });
     await Transformation.create({ userId: client1._id, date: new Date(Date.now() - 2 * 86400000), weight: 79.8, chest: 41.2, waist: 34.1, hips: 38.6, biceps: 14.4, notes: 'Active fat loss achieved. Muscle definition improving.' });
+
+    // Seed New Features: WorkoutProgram, MealPlan, Reward, Product
+    const vids = await WorkoutVideo.find();
+    
+    await WorkoutProgram.create({
+      userId: client1._id,
+      assignedBy: staff1._id,
+      title: '30-Day Fat Loss Protocol',
+      level: 'Beginner',
+      category: 'Fat Loss',
+      schedule: [
+        { dayNumber: 1, title: 'HIIT Cardio', description: '20 mins max effort', videoIds: [vids[0]?._id].filter(Boolean), completed: true },
+        { dayNumber: 2, title: 'Core Strengthening', description: '15 mins abs', videoIds: [vids[1]?._id].filter(Boolean), completed: false },
+        { dayNumber: 3, title: 'Active Recovery Yoga', description: 'Breathwork', videoIds: [vids[3]?._id].filter(Boolean), completed: false }
+      ]
+    });
+
+    await MealPlan.create({
+      userId: client1._id,
+      assignedBy: staff1._id,
+      dailyCalorieTarget: 1800,
+      macroSplit: { protein: 40, carbs: 40, fat: 20 },
+      meals: {
+        breakfast: [{ name: 'Protein Oats', description: 'Oats with whey and berries', calories: 350, protein: 30, carbs: 45, fat: 5 }],
+        lunch: [{ name: 'Chicken Salad', description: 'Grilled chicken, mixed greens', calories: 450, protein: 40, carbs: 15, fat: 15 }],
+        dinner: [{ name: 'Salmon & Veg', description: 'Baked salmon with broccoli', calories: 500, protein: 35, carbs: 20, fat: 25 }],
+        snacks: [{ name: 'Greek Yogurt', description: 'Fat-free yogurt', calories: 100, protein: 15, carbs: 10, fat: 0 }]
+      },
+      detoxDrinks: [
+        { name: 'Morning Lemon Ginger', description: 'Warm water, lemon, ginger', timeToConsume: 'Morning on empty stomach' }
+      ]
+    });
+
+    await Reward.create({
+      userId: client1._id,
+      type: 'Certificate',
+      title: 'Foundation Program Complete',
+      description: 'Successfully completed the 14-day Foundation Protocol.',
+      issueDate: new Date(Date.now() - 5 * 86400000)
+    });
+
+    await Product.create({
+      title: 'Premium Whey Isolate',
+      description: 'High-quality fast-absorbing protein',
+      price: 65,
+      type: 'Product',
+      stock: 50
+    });
+    
+    await Product.create({
+      title: '1-on-1 Nutrition Consultation',
+      description: '45-minute video call with a certified nutritionist',
+      price: 120,
+      type: 'Consultation',
+      stock: 0
+    });
 
     res.json({
       success: true,

@@ -7,6 +7,8 @@ import {
   getSales,
   getFranchises,
   getFranchiseDashboardData,
+  getProducts,
+  createProduct,
 } from '../controllers/businessController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 
@@ -25,5 +27,9 @@ router.route('/sale')
 
 router.route('/sales')
   .get(protect, getSales);
+
+router.route('/products')
+  .get(protect, getProducts)
+  .post(protect, authorize('admin', 'franchise'), createProduct);
 
 export default router;

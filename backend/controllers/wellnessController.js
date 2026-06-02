@@ -4,6 +4,9 @@ import WorkoutVideo from '../models/WorkoutVideo.js';
 import User from '../models/User.js';
 import BodyAnalysis from '../models/BodyAnalysis.js';
 import MedicalReport from '../models/MedicalReport.js';
+import WorkoutProgram from '../models/WorkoutProgram.js';
+import MealPlan from '../models/MealPlan.js';
+import Reward from '../models/Reward.js';
 
 // ============================================================
 // WELLNESS QUOTES — curated bank of 20 quotes, returned randomly
@@ -215,8 +218,21 @@ export const deleteWorkout = async (req, res) => {
 // @access  Private
 export const getWorkouts = async (req, res) => {
   try {
-    const workouts = await WorkoutVideo.find({});
-    res.json(workouts);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const startIndex = (page - 1) * limit;
+
+    const total = await WorkoutVideo.countDocuments({});
+    const workouts = await WorkoutVideo.find({}).skip(startIndex).limit(limit);
+
+    res.json({
+      success: true,
+      count: workouts.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      data: workouts
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -263,7 +279,7 @@ export const getDailyLog = async (req, res) => {
 // @route   POST /api/wellness/daily-log
 // @access  Private
 export const saveDailyLog = async (req, res) => {
-  const { date, waterIntake, waterGoal, sleepHours, meditationMinutes, stepCount, stepGoal, mealsLogged } = req.body;
+  const { date, waterIntake, waterGoal, sleepHours, meditationMinutes, yogaMinutes, habits, stepCount, stepGoal, mealsLogged } = req.body;
   const userId = req.user._id;
 
   try {
@@ -304,6 +320,8 @@ export const saveDailyLog = async (req, res) => {
       log.waterGoal = waterGoal ?? log.waterGoal;
       log.sleepHours = sleepHours ?? log.sleepHours;
       log.meditationMinutes = meditationMinutes ?? log.meditationMinutes;
+      log.yogaMinutes = yogaMinutes ?? log.yogaMinutes;
+      log.habits = habits ?? log.habits;
       log.stepCount = stepCount ?? log.stepCount;
       log.stepGoal = stepGoal ?? log.stepGoal;
       log.mealsLogged = mealsLogged ?? log.mealsLogged;
@@ -320,6 +338,8 @@ export const saveDailyLog = async (req, res) => {
         waterGoal: waterGoal || 2500,
         sleepHours: sleepHours || 0,
         meditationMinutes: meditationMinutes || 0,
+        yogaMinutes: yogaMinutes || 0,
+        habits: habits || [],
         stepCount: stepCount || 0,
         stepGoal: stepGoal || 10000,
         mealsLogged: mealsLogged || {
@@ -327,13 +347,14 @@ export const saveDailyLog = async (req, res) => {
           lunch: { name: '', calories: 0, protein: 0, carbs: 0, fat: 0, logged: false },
           dinner: { name: '', calories: 0, protein: 0, carbs: 0, fat: 0, logged: false },
           snacks: { name: '', calories: 0, protein: 0, carbs: 0, fat: 0, logged: false },
+          detoxDrinks: { name: '', calories: 0, protein: 0, carbs: 0, fat: 0, logged: false },
         },
         challengesCompleted,
       });
     }
 
     // Award points and check badges
-    if (pointsToAdd > 0) {
+    if (pointsToAdd > 0 || challengesCompleted.includes('water')) {
       const user = await User.findById(userId);
       if (user) {
         user.points += pointsToAdd;
@@ -352,11 +373,270 @@ export const saveDailyLog = async (req, res) => {
           user.badges.push('Elite Health Guru');
         }
 
+        // True Water Streak Check logic
+        if (challengesCompleted.includes('water')) {
+          if (user.lastWaterLogDate !== date) {
+            // Check if last log date was yesterday
+            const yesterday = new Date(date);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            
+            if (user.lastWaterLogDate === yesterdayStr) {
+              user.waterStreak += 1;
+            } else {
+              user.waterStreak = 1;
+            }
+            user.lastWaterLogDate = date;
+          }
+          
+          if (user.waterStreak >= 3 && !user.badges.includes('Water Streak Master')) {
+            user.badges.push('Water Streak Master');
+            await Reward.create({
+              userId,
+              type: 'Milestone',
+              title: '3-Day Hydration Streak',
+              description: 'You hit your water goal 3 days in a row!'
+            });
+          }
+        }
+
         await user.save();
       }
     }
 
     res.json(log);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ============================================================
+// WORKOUT PROGRAMS (Structured)
+// ============================================================
+
+// @desc    Get assigned workout programs for user
+// @route   GET /api/wellness/programs
+// @access  Private
+export const getWorkoutPrograms = async (req, res) => {
+  try {
+    const programs = await WorkoutProgram.find({ userId: req.user._id }).populate('schedule.videoIds');
+    res.json(programs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Assign a workout program to a user
+// @route   POST /api/wellness/programs
+// @access  Private (Admin/Staff)
+export const assignWorkoutProgram = async (req, res) => {
+  try {
+    const { userId, title, level, category, schedule, mode } = req.body;
+    const program = await WorkoutProgram.create({
+      userId,
+      assignedBy: req.user._id,
+      title,
+      level,
+      category,
+      schedule,
+      mode
+    });
+    res.status(201).json(program);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ============================================================
+// MEAL PLANS
+// ============================================================
+
+// @desc    Get assigned meal plans for user
+// @route   GET /api/wellness/meal-plans
+// @access  Private
+export const getMealPlans = async (req, res) => {
+  try {
+    const plans = await MealPlan.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    res.json(plans);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Assign a meal plan to a user
+// @route   POST /api/wellness/meal-plans
+// @access  Private (Admin/Staff)
+export const assignMealPlan = async (req, res) => {
+  try {
+    const { userId, dailyCalorieTarget, macroSplit, meals, detoxDrinks } = req.body;
+    const plan = await MealPlan.create({
+      userId,
+      assignedBy: req.user._id,
+      dailyCalorieTarget,
+      macroSplit,
+      meals,
+      detoxDrinks
+    });
+    res.status(201).json(plan);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Generate personalized AI Diet Plan based on weight goals
+// @route   POST /api/wellness/ai-diet-planner
+// @access  Private
+export const generateAIDietPlan = async (req, res) => {
+  try {
+    const { currentWeight, targetWeight, goal } = req.body;
+    
+    // Simple Macro Algorithm Simulation
+    let calories = 2000;
+    let proteinPct = 30;
+    let carbsPct = 40;
+    let fatPct = 30;
+    
+    const weightNum = parseFloat(currentWeight);
+    
+    if (goal === 'lose') {
+      calories = Math.round(weightNum * 22 - 400); // Caloric deficit
+      proteinPct = 40; // High protein to preserve muscle
+      carbsPct = 30;
+      fatPct = 30;
+    } else if (goal === 'gain') {
+      calories = Math.round(weightNum * 24 + 500); // Caloric surplus
+      proteinPct = 30;
+      carbsPct = 50; // Higher carbs for energy/growth
+      fatPct = 20;
+    } else {
+      calories = Math.round(weightNum * 24); // Maintenance
+    }
+    
+    // Ensure healthy minimums
+    if (calories < 1200) calories = 1200;
+
+    // Dynamic Mock AI Engine - Picks random meals based on goal
+    const mealDatabase = {
+      lose: {
+        breakfast: [
+          { name: "Egg White Scramble", description: "Egg whites with spinach and tomatoes", cal: 250, p: 30, c: 10, f: 5 },
+          { name: "Oats & Berries", description: "Oats cooked in water with fresh berries", cal: 300, p: 10, c: 50, f: 5 },
+          { name: "Protein Smoothie", description: "Whey protein, almond milk, and half a banana", cal: 200, p: 25, c: 15, f: 3 }
+        ],
+        lunch: [
+          { name: "Grilled Chicken Salad", description: "Chicken breast over mixed greens with vinaigrette", cal: 350, p: 40, c: 10, f: 15 },
+          { name: "Tuna Wrap", description: "Canned tuna in a whole wheat wrap with lettuce", cal: 300, p: 30, c: 30, f: 5 },
+          { name: "Lentil Soup", description: "Hearty lentil soup with a side of steamed broccoli", cal: 320, p: 18, c: 45, f: 5 }
+        ],
+        snacks: [
+          { name: "Greek Yogurt", description: "Plain non-fat greek yogurt", cal: 100, p: 15, c: 5, f: 0 },
+          { name: "Apple & Almonds", description: "One green apple with 10 raw almonds", cal: 150, p: 3, c: 20, f: 7 },
+          { name: "Carrot Sticks & Hummus", description: "Baby carrots with 2 tbsp hummus", cal: 130, p: 4, c: 15, f: 6 }
+        ],
+        dinner: [
+          { name: "Baked Salmon & Asparagus", description: "Wild caught salmon with steamed asparagus", cal: 400, p: 35, c: 10, f: 20 },
+          { name: "Tofu Stir-fry", description: "Tofu and mixed vegetables in light soy sauce", cal: 300, p: 20, c: 25, f: 10 },
+          { name: "Turkey Meatballs", description: "Lean turkey meatballs with zucchini noodles", cal: 350, p: 35, c: 15, f: 12 }
+        ]
+      },
+      gain: {
+        breakfast: [
+          { name: "Mass Gainer Oatmeal", description: "Oats with whole milk, peanut butter, and banana", cal: 600, p: 20, c: 70, f: 25 },
+          { name: "Whole Eggs & Avocado Toast", description: "3 whole eggs with 2 slices of avocado toast", cal: 550, p: 25, c: 40, f: 30 }
+        ],
+        lunch: [
+          { name: "Beef & Rice Bowl", description: "Lean ground beef with white rice and black beans", cal: 700, p: 45, c: 80, f: 20 },
+          { name: "Chicken Pasta", description: "Chicken breast with whole wheat pasta and olive oil", cal: 650, p: 50, c: 75, f: 15 }
+        ],
+        snacks: [
+          { name: "Peanut Butter Sandwich", description: "PB&J on whole wheat bread", cal: 400, p: 15, c: 50, f: 18 },
+          { name: "Protein Shake & Nuts", description: "Whey protein with whole milk and mixed nuts", cal: 450, p: 35, c: 20, f: 25 }
+        ],
+        dinner: [
+          { name: "Steak & Potatoes", description: "Sirloin steak with roasted potatoes and butter", cal: 800, p: 55, c: 60, f: 35 },
+          { name: "Salmon & Quinoa", description: "Large salmon fillet with a massive portion of quinoa", cal: 750, p: 45, c: 65, f: 30 }
+        ]
+      },
+      maintain: {
+        breakfast: [
+          { name: "Balanced Eggs & Toast", description: "2 eggs with whole wheat toast and fruit", cal: 400, p: 20, c: 45, f: 15 },
+          { name: "Yogurt Parfait", description: "Greek yogurt with granola and berries", cal: 350, p: 18, c: 50, f: 8 }
+        ],
+        lunch: [
+          { name: "Chicken & Quinoa Salad", description: "Grilled chicken, quinoa, and veggies", cal: 500, p: 40, c: 50, f: 15 },
+          { name: "Turkey Sandwich", description: "Turkey breast on whole grain bread with side salad", cal: 450, p: 30, c: 45, f: 10 }
+        ],
+        snacks: [
+          { name: "Cottage Cheese & Pineapple", description: "Half cup cottage cheese with fresh pineapple", cal: 200, p: 14, c: 20, f: 5 },
+          { name: "Mixed Nuts & Fruit", description: "Handful of trail mix", cal: 250, p: 6, c: 25, f: 15 }
+        ],
+        dinner: [
+          { name: "Pork Chop & Sweet Potato", description: "Grilled pork chop with mashed sweet potato", cal: 550, p: 35, c: 45, f: 20 },
+          { name: "Shrimp Tacos", description: "3 corn tortillas with grilled shrimp and avocado", cal: 500, p: 30, c: 50, f: 15 }
+        ]
+      }
+    };
+
+    const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const mealPool = mealDatabase[goal] || mealDatabase['maintain'];
+
+    // Select random meals and scale calories to hit the exact target calculated by the macro algorithm
+    const b = getRandomItem(mealPool.breakfast);
+    const l = getRandomItem(mealPool.lunch);
+    const s = getRandomItem(mealPool.snacks);
+    const d = getRandomItem(mealPool.dinner);
+
+    const generatedMeals = {
+      breakfast: [
+        { name: b.name, description: b.description, calories: Math.round(calories * 0.25), protein: Math.round((calories*0.25*(proteinPct/100))/4), carbs: Math.round((calories*0.25*(carbsPct/100))/4), fat: Math.round((calories*0.25*(fatPct/100))/9) }
+      ],
+      lunch: [
+        { name: l.name, description: l.description, calories: Math.round(calories * 0.35), protein: Math.round((calories*0.35*(proteinPct/100))/4), carbs: Math.round((calories*0.35*(carbsPct/100))/4), fat: Math.round((calories*0.35*(fatPct/100))/9) }
+      ],
+      snacks: [
+        { name: s.name, description: s.description, calories: Math.round(calories * 0.15), protein: Math.round((calories*0.15*(proteinPct/100))/4), carbs: Math.round((calories*0.15*(carbsPct/100))/4), fat: Math.round((calories*0.15*(fatPct/100))/9) }
+      ],
+      dinner: [
+        { name: d.name, description: d.description, calories: Math.round(calories * 0.25), protein: Math.round((calories*0.25*(proteinPct/100))/4), carbs: Math.round((calories*0.25*(carbsPct/100))/4), fat: Math.round((calories*0.25*(fatPct/100))/9) }
+      ]
+    };
+
+    // Dynamically pick detox drinks
+    const detoxPool = [
+      { name: "Lemon-Ginger Flush", description: "Warm water with lemon, ginger, and a dash of cayenne", timeToConsume: "Morning empty stomach" },
+      { name: "Apple Cider Vinegar Tonic", description: "1 tbsp ACV in 1 glass of water", timeToConsume: "15 mins before lunch" },
+      { name: "Green Tea Matcha", description: "Antioxidant rich matcha green tea", timeToConsume: "Afternoon slump" },
+      { name: "Chamomile Cinnamon Sleep Aid", description: "Warm chamomile tea with cinnamon stick", timeToConsume: "30 mins before bed" }
+    ];
+    
+    const generatedDetoxDrinks = [getRandomItem(detoxPool), getRandomItem(detoxPool)];
+
+    const plan = await MealPlan.create({
+      userId: req.user._id,
+      assignedBy: req.user._id, // Self assigned via AI
+      dailyCalorieTarget: calories,
+      macroSplit: { protein: proteinPct, carbs: carbsPct, fat: fatPct },
+      meals: generatedMeals,
+      detoxDrinks: generatedDetoxDrinks
+    });
+
+    res.status(201).json(plan);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ============================================================
+// REWARDS / CERTIFICATES
+// ============================================================
+
+// @desc    Get user rewards and certificates
+// @route   GET /api/wellness/rewards
+// @access  Private
+export const getRewards = async (req, res) => {
+  try {
+    const rewards = await Reward.find({ userId: req.user._id }).sort({ issueDate: -1 });
+    res.json(rewards);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

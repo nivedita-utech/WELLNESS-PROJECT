@@ -4,7 +4,7 @@ import User from '../models/User.js';
 // @route   GET /api/users
 // @access  Private (Staff/Admin)
 export const getUsers = async (req, res) => {
-  const { search, role, franchiseId } = req.query;
+  const { search, role, franchiseId, status } = req.query;
   const query = {};
 
   if (search) {
@@ -23,9 +23,29 @@ export const getUsers = async (req, res) => {
     query.franchiseId = franchiseId;
   }
 
+  if (status) {
+    query.status = status;
+  }
+
   try {
-    const users = await User.find(query).select('-password').sort({ createdAt: -1 });
-    res.json(users);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const startIndex = (page - 1) * limit;
+
+    // Using Promise.all to run count and find concurrently
+    const [total, users] = await Promise.all([
+      User.countDocuments(query),
+      User.find(query).select('-password').sort({ createdAt: -1 }).skip(startIndex).limit(limit)
+    ]);
+
+    res.json({
+      success: true,
+      count: users.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      data: users
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

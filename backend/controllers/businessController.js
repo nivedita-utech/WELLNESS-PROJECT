@@ -1,6 +1,7 @@
 import BusinessControl from '../models/BusinessControl.js';
 import Sale from '../models/Sale.js';
 import User from '../models/User.js';
+import Product from '../models/Product.js';
 
 // @desc    Get business configuration settings
 // @route   GET /api/business/control
@@ -98,6 +99,10 @@ export const getAuditLogs = async (req, res) => {
 // @access  Private
 export const processSale = async (req, res) => {
   const { amount, clientEmail, description, manualAssignment } = req.body;
+
+  if (typeof amount !== 'number' || amount <= 0) {
+    return res.status(400).json({ message: 'Invalid amount. Amount must be greater than 0.' });
+  }
 
   try {
     const client = await User.findOne({ email: clientEmail });
@@ -198,6 +203,11 @@ export const getFranchises = async (req, res) => {
 export const getFranchiseDashboardData = async (req, res) => {
   const franchiseId = req.params.franchiseId;
 
+  // IDOR protection: Ensure franchise can only access their own dashboard
+  if (req.user.role === 'franchise' && req.user._id.toString() !== franchiseId) {
+    return res.status(403).json({ message: 'Forbidden. You can only view your own dashboard.' });
+  }
+
   try {
     const sales = await Sale.find({ franchiseId, assignedTo: 'franchise' });
     const staff = await User.find({ role: 'staff', franchiseId }).select('name email status');
@@ -213,6 +223,51 @@ export const getFranchiseDashboardData = async (req, res) => {
       totalRevenue,
       totalCommission,
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ============================================================
+// E-COMMERCE / SHOP (Products & Consultations)
+// ============================================================
+
+// @desc    Get all active products
+// @route   GET /api/business/products
+// @access  Private
+export const getProducts = async (req, res) => {
+  try {
+    const products = await Product.find({});
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Create a product or consultation
+// @route   POST /api/business/products
+// @access  Private (Admin/Franchise)
+export const createProduct = async (req, res) => {
+  try {
+    const { title, description, price, type, stock, imageUrl } = req.body;
+    let franchiseId = null;
+    
+    // If franchise is creating it, tie it to their franchise
+    if (req.user.role === 'franchise') {
+      franchiseId = req.user._id;
+    }
+
+    const product = await Product.create({
+      title,
+      description,
+      price,
+      type,
+      stock,
+      imageUrl,
+      franchiseId
+    });
+
+    res.status(201).json(product);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -7,7 +7,7 @@ const Members = () => {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -41,7 +41,7 @@ const Members = () => {
       const res = await authFetch('/api/users');
       if (res.ok) {
         const data = await res.json();
-        setMembers(data);
+        setMembers(data.data || data);
       } else {
         const errorData = await res.json();
         setError(errorData.message || 'Failed to fetch members');
@@ -86,7 +86,7 @@ const Members = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      
+
       const data = await res.json();
       if (res.ok) {
         setIsAddModalOpen(false);
@@ -109,8 +109,8 @@ const Members = () => {
       if (res.ok) {
         fetchMembers();
       } else {
-         const data = await res.json();
-         alert(data.message || "Failed to delete member");
+        const data = await res.json();
+        alert(data.message || "Failed to delete member");
       }
     } catch (err) {
       alert(err.message);
@@ -128,7 +128,7 @@ const Members = () => {
         role: editFormData.role,
         status: editFormData.status
       };
-      
+
       if (editFormData.password) {
         payload.password = editFormData.password;
       }
@@ -138,7 +138,7 @@ const Members = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
+
       const data = await res.json();
       if (res.ok) {
         setIsEditModalOpen(false);
@@ -157,7 +157,7 @@ const Members = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">Members</h1>
-        <button 
+        <button
           onClick={() => setIsAddModalOpen(true)}
           className="flex items-center px-4 py-2 bg-brand-teal text-white rounded-lg font-medium hover:bg-brand-teal/90 transition-colors"
         >
@@ -171,7 +171,7 @@ const Members = () => {
           {error}
         </div>
       )}
-      
+
       <div className="glass-card overflow-hidden">
         {loading ? (
           <div className="text-center py-12 text-slate-500">
@@ -223,7 +223,7 @@ const Members = () => {
                     <td className="py-3 px-4">
                       <div className="flex justify-end gap-2">
                         {currentUser?.role === 'admin' && (
-                          <button 
+                          <button
                             onClick={() => openEditModal(member)}
                             className="text-blue-500 hover:text-blue-700 p-1 rounded-md hover:bg-blue-50 transition-colors"
                             title="Edit Member"
@@ -232,7 +232,7 @@ const Members = () => {
                           </button>
                         )}
                         {currentUser?.role === 'admin' && currentUser?._id !== member._id && (
-                          <button 
+                          <button
                             onClick={() => handleDelete(member._id)}
                             className="text-red-500 hover:text-red-700 p-1 rounded-md hover:bg-red-50 transition-colors"
                             title="Delete Member"
@@ -255,21 +255,21 @@ const Members = () => {
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
             <div className="flex justify-between items-center p-6 border-b border-slate-100">
               <h2 className="text-xl font-bold text-slate-800">Add New Member</h2>
-              <button 
+              <button
                 onClick={() => setIsAddModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {formError && (
                 <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">
                   {formError}
                 </div>
               )}
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                 <div className="relative">
@@ -365,21 +365,21 @@ const Members = () => {
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
             <div className="flex justify-between items-center p-6 border-b border-slate-100">
               <h2 className="text-xl font-bold text-slate-800">Edit Member</h2>
-              <button 
+              <button
                 onClick={() => setIsEditModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
               {editFormError && (
                 <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">
                   {editFormError}
                 </div>
               )}
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                 <div className="relative">

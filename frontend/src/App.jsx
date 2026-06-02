@@ -11,6 +11,33 @@ import Billing from './pages/Billing';
 import Settings from './pages/Settings';
 import { Activity, LogOut, LayoutDashboard, Bell, Search, Menu, X, Settings as SettingsIcon, Users, CreditCard } from 'lucide-react';
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+  componentDidCatch(error, errorInfo) {
+    this.setState({ hasError: true, error, errorInfo });
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 bg-red-50 text-red-900 border border-red-200 rounded-xl m-8">
+          <h2 className="text-2xl font-bold mb-4">Something went wrong.</h2>
+          <details open style={{ whiteSpace: 'pre-wrap' }}>
+            <summary className="font-semibold cursor-pointer mb-2">Show Error Details</summary>
+            {this.state.error && this.state.error.toString()}
+            <br />
+            {this.state.errorInfo && this.state.errorInfo.componentStack}
+          </details>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useContext(AuthContext);
 
@@ -63,12 +90,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
-      
+
       {/* Sidebar */}
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-slate-200 z-50 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="flex flex-col h-full">
@@ -104,22 +131,28 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               Overview
             </Link>
             {/* These can be conditionally rendered based on role later */}
-            <Link to="/members" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/members') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
-              <Users size={20} />
-              Members
-            </Link>
-            <Link to="/billing" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/billing') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
-              <CreditCard size={20} />
-              Billing
-            </Link>
-            <Link to="/settings" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/settings') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
-              <SettingsIcon size={20} />
-              Settings
-            </Link>
+            {['admin', 'franchise'].includes(user.role) && (
+              <Link to="/members" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/members') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+                <Users size={20} />
+                Members
+              </Link>
+            )}
+            {['admin', 'franchise', 'user'].includes(user.role) && (
+              <Link to="/billing" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/billing') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+                <CreditCard size={20} />
+                Billing
+              </Link>
+            )}
+            {['admin', 'franchise', 'user'].includes(user.role) && (
+              <Link to="/settings" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${location.pathname.startsWith('/settings') ? 'bg-brand-teal/10 text-brand-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+                <SettingsIcon size={20} />
+                Settings
+              </Link>
+            )}
           </nav>
 
           <div className="p-4 border-t border-slate-100">
-            <button 
+            <button
               onClick={logout}
               className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 font-medium transition-colors"
             >
@@ -137,22 +170,14 @@ const Header = ({ setIsOpen }) => {
   return (
     <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <button 
+        <button
           onClick={() => setIsOpen(true)}
           className="lg:hidden p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
         >
           <Menu size={24} />
         </button>
-        <div className="hidden sm:flex items-center px-3 py-2 bg-slate-100 rounded-lg text-slate-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand-sky/20 focus-within:text-slate-800 transition-all">
-          <Search size={18} />
-          <input 
-            type="text" 
-            placeholder="Search..." 
-            className="bg-transparent border-none outline-none ml-2 text-sm w-64 placeholder:text-slate-400"
-          />
-        </div>
       </div>
-      
+
       <div className="flex items-center gap-4">
         <button className="relative p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
           <Bell size={20} />
@@ -171,7 +196,7 @@ const MainLayout = ({ children }) => {
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <div className="flex-1 flex flex-col lg:pl-64 min-w-0 transition-all duration-300">
         <Header setIsOpen={setIsSidebarOpen} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full">
           {children}
         </main>
       </div>
@@ -185,7 +210,7 @@ const App = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          
+
           <Route
             path="/user"
             element={
@@ -196,7 +221,7 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/staff"
             element={
@@ -233,7 +258,7 @@ const App = () => {
           <Route
             path="/members"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin', 'franchise']}>
                 <MainLayout>
                   <Members />
                 </MainLayout>
@@ -244,9 +269,11 @@ const App = () => {
           <Route
             path="/billing"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin', 'franchise', 'user']}>
                 <MainLayout>
-                  <Billing />
+                  <ErrorBoundary>
+                    <Billing />
+                  </ErrorBoundary>
                 </MainLayout>
               </ProtectedRoute>
             }
@@ -255,7 +282,7 @@ const App = () => {
           <Route
             path="/settings"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin', 'franchise', 'user']}>
                 <MainLayout>
                   <Settings />
                 </MainLayout>

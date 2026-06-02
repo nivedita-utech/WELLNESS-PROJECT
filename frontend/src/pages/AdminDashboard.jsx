@@ -87,7 +87,7 @@ const AdminDashboard = () => {
     try {
       const res = await authFetch('/api/users');
       const data = await res.json();
-      setUsers(data);
+      setUsers(data.data || data);
     } catch (err) { console.error(err); }
   };
 

@@ -19,7 +19,11 @@ import {
   Users,
   Moon,
   Compass as CalmIcon,
-  CheckCircle2
+  CheckCircle2,
+  ShoppingBag,
+  X,
+  Bell,
+  Sparkles
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
@@ -43,8 +47,33 @@ const UserDashboard = () => {
   // Analytics graphs
   const [graphData, setGraphData] = useState(null);
   
+  // New features state
+  const [programs, setPrograms] = useState([]);
+  const [mealPlans, setMealPlans] = useState([]);
+  const [rewards, setRewards] = useState([]);
+  const [products, setProducts] = useState([]);
+  
   // Hydration state
   const [tempWater, setTempWater] = useState(0);
+  const [showWaterReminder, setShowWaterReminder] = useState(false);
+  
+  // Water Reminder Engine
+  useEffect(() => {
+    const goal = dailyLog?.waterGoal || 2500;
+    if (tempWater >= goal) {
+      setShowWaterReminder(false);
+      return;
+    }
+
+    // Remind every 2 hours (7200000 ms)
+    const interval = setInterval(() => {
+      if (tempWater < goal) {
+        setShowWaterReminder(true);
+      }
+    }, 7200000);
+
+    return () => clearInterval(interval);
+  }, [tempWater, dailyLog?.waterGoal]);
 
   // Meal Log State
   const [mealCategory, setMealCategory] = useState('breakfast');
@@ -53,6 +82,11 @@ const UserDashboard = () => {
   const [mealProt, setMealProt] = useState(0);
   const [mealCarbs, setMealCarbs] = useState(0);
   const [mealFat, setMealFat] = useState(0);
+
+  // AI Diet Planner State
+  const [aiCurrentWeight, setAiCurrentWeight] = useState('');
+  const [aiGoal, setAiGoal] = useState('lose');
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   // Transformation input state
   const [weight, setWeight] = useState('');
@@ -88,7 +122,43 @@ const UserDashboard = () => {
     fetchQuote();
     fetchRecommendations();
     fetchGraphData();
+    fetchPrograms();
+    fetchMealPlans();
+    fetchRewards();
+    fetchProducts();
   }, [date]);
+
+  const fetchPrograms = async () => {
+    try {
+      const res = await authFetch('/api/wellness/programs');
+      const data = await res.json();
+      setPrograms(data);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchMealPlans = async () => {
+    try {
+      const res = await authFetch('/api/wellness/meal-plans');
+      const data = await res.json();
+      setMealPlans(data);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchRewards = async () => {
+    try {
+      const res = await authFetch('/api/wellness/rewards');
+      const data = await res.json();
+      setRewards(data);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const res = await authFetch('/api/business/products');
+      const data = await res.json();
+      setProducts(data);
+    } catch (err) { console.error(err); }
+  };
 
   const fetchQuote = async () => {
     try {
@@ -145,7 +215,7 @@ const UserDashboard = () => {
     try {
       const res = await authFetch('/api/wellness/workouts');
       const data = await res.json();
-      setWorkouts(data);
+      setWorkouts(data.data || data);
     } catch (err) {
       console.error(err);
     }
@@ -191,6 +261,33 @@ const UserDashboard = () => {
     }
   };
 
+  const handleGenerateAIDietPlan = async (e) => {
+    e.preventDefault();
+    if (!aiCurrentWeight) return alert('Please enter your current weight');
+    
+    setIsGeneratingPlan(true);
+    try {
+      const res = await authFetch('/api/wellness/ai-diet-planner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentWeight: aiCurrentWeight, goal: aiGoal })
+      });
+      
+      if (res.ok) {
+        await fetchMealPlans(); // Refresh the meal plans list to show the new one
+        alert('AI Diet Plan successfully generated!');
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Error generating plan');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error while generating plan');
+    } finally {
+      setIsGeneratingPlan(false);
+    }
+  };
+
   // Log water increments
   const addWater = async (amount) => {
     const updatedWater = tempWater + amount;
@@ -199,14 +296,19 @@ const UserDashboard = () => {
     try {
       const res = await authFetch('/api/wellness/daily-log', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           date,
           waterIntake: updatedWater,
           waterGoal: dailyLog?.waterGoal || 2500,
           sleepHours: dailyLog?.sleepHours || 0,
           meditationMinutes: dailyLog?.meditationMinutes || 0,
+          yogaMinutes: dailyLog?.yogaMinutes || 0,
           stepCount: dailyLog?.stepCount || 0,
           mealsLogged: dailyLog?.mealsLogged,
+          habits: dailyLog?.habits || [],
         }),
       });
       const data = await res.json();
@@ -218,18 +320,54 @@ const UserDashboard = () => {
   };
 
   // Log Sleep & Steps
-  const updateStepsSleep = async (steps, sleep, meditation) => {
+  const updateStepsSleep = async (steps, sleep, meditation, yoga) => {
     try {
       const res = await authFetch('/api/wellness/daily-log', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           date,
           waterIntake: dailyLog?.waterIntake || 0,
           waterGoal: dailyLog?.waterGoal || 2500,
           sleepHours: sleep !== undefined ? sleep : dailyLog?.sleepHours || 0,
           meditationMinutes: meditation !== undefined ? meditation : dailyLog?.meditationMinutes || 0,
+          yogaMinutes: yoga !== undefined ? yoga : dailyLog?.yogaMinutes || 0,
           stepCount: steps !== undefined ? steps : dailyLog?.stepCount || 0,
           mealsLogged: dailyLog?.mealsLogged,
+          habits: dailyLog?.habits || [],
+        }),
+      });
+      const data = await res.json();
+      setDailyLog(data);
+      triggerPointsBadgeUpdate();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const toggleHabit = async (habitName) => {
+    const currentHabits = dailyLog?.habits || [];
+    let newHabits;
+    if (currentHabits.includes(habitName)) {
+      newHabits = currentHabits.filter(h => h !== habitName);
+    } else {
+      newHabits = [...currentHabits, habitName];
+    }
+    
+    try {
+      const res = await authFetch('/api/wellness/daily-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date,
+          waterIntake: dailyLog?.waterIntake || 0,
+          waterGoal: dailyLog?.waterGoal || 2500,
+          sleepHours: dailyLog?.sleepHours || 0,
+          meditationMinutes: dailyLog?.meditationMinutes || 0,
+          yogaMinutes: dailyLog?.yogaMinutes || 0,
+          stepCount: dailyLog?.stepCount || 0,
+          mealsLogged: dailyLog?.mealsLogged,
+          habits: newHabits,
         }),
       });
       const data = await res.json();
@@ -264,7 +402,9 @@ const UserDashboard = () => {
           waterGoal: dailyLog?.waterGoal || 2500,
           sleepHours: dailyLog?.sleepHours || 0,
           meditationMinutes: dailyLog?.meditationMinutes || 0,
+          yogaMinutes: dailyLog?.yogaMinutes || 0,
           stepCount: dailyLog?.stepCount || 0,
+          habits: dailyLog?.habits || [],
           mealsLogged,
         }),
       });
@@ -430,6 +570,7 @@ const UserDashboard = () => {
     { id: 'healthdocs', label: 'Health Locker', icon: FileText },
     { id: 'community', label: 'Social & Leaderboard', icon: Users },
     { id: 'analytics', label: 'Analytics & Graphs', icon: TrendingUp },
+    { id: 'shop', label: 'Ecosystem Store', icon: ShoppingBag },
   ];
 
   return (
@@ -470,7 +611,7 @@ const UserDashboard = () => {
       </div>
 
       {/* Primary Dashboard Navigation Tabs */}
-      <div className="flex space-x-1 bg-slate-200/50 p-1 rounded-xl w-full overflow-x-auto">
+      <div className="flex flex-wrap gap-1 bg-slate-200/50 p-1 rounded-xl w-full">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -595,6 +736,27 @@ const UserDashboard = () => {
             </div>
 
             <div className="mt-auto border-t border-slate-100 pt-5">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Rewards & Certificates</h4>
+              {rewards.length > 0 ? (
+                <div className="space-y-2">
+                  {rewards.map((r, i) => (
+                    <div key={i} className="flex items-center gap-3 bg-amber-50 rounded-xl p-3 border border-amber-100">
+                      <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">
+                        <Award size={16} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-amber-700">{r.title}</p>
+                        <p className="text-xs text-amber-600/70">{new Date(r.issueDate).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 italic">No formal certificates yet.</p>
+              )}
+            </div>
+
+            <div className="mt-4 border-t border-slate-100 pt-5">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Daily Motivation Quote</h4>
               {quote ? (
                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 relative">
@@ -674,7 +836,7 @@ const UserDashboard = () => {
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all"
                     placeholder="e.g. 8000"
                     value={dailyLog?.stepCount || ''}
-                    onChange={(e) => updateStepsSleep(Number(e.target.value), undefined, undefined)}
+                    onChange={(e) => updateStepsSleep(Number(e.target.value), undefined, undefined, undefined)}
                   />
                   <span className="inline-flex items-center justify-center px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-500 shrink-0">steps</span>
                 </div>
@@ -689,7 +851,7 @@ const UserDashboard = () => {
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all"
                     placeholder="e.g. 7.5"
                     value={dailyLog?.sleepHours || ''}
-                    onChange={(e) => updateStepsSleep(undefined, Number(e.target.value), undefined)}
+                    onChange={(e) => updateStepsSleep(undefined, Number(e.target.value), undefined, undefined)}
                   />
                   <span className="inline-flex items-center justify-center px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-500 shrink-0">hours</span>
                 </div>
@@ -703,9 +865,41 @@ const UserDashboard = () => {
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all"
                     placeholder="e.g. 15"
                     value={dailyLog?.meditationMinutes || ''}
-                    onChange={(e) => updateStepsSleep(undefined, undefined, Number(e.target.value))}
+                    onChange={(e) => updateStepsSleep(undefined, undefined, Number(e.target.value), undefined)}
                   />
                   <span className="inline-flex items-center justify-center px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-500 shrink-0">mins</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Yoga (Minutes)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all"
+                    placeholder="e.g. 30"
+                    value={dailyLog?.yogaMinutes || ''}
+                    onChange={(e) => updateStepsSleep(undefined, undefined, undefined, Number(e.target.value))}
+                  />
+                  <span className="inline-flex items-center justify-center px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-500 shrink-0">mins</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Daily Habits</label>
+                <div className="flex flex-wrap gap-2">
+                  {['Read 10 Pages', 'No Sugar', 'Cold Shower', 'Journaling'].map(habit => {
+                    const isActive = dailyLog?.habits?.includes(habit);
+                    return (
+                      <button 
+                        key={habit}
+                        onClick={() => toggleHabit(habit)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${isActive ? 'bg-brand-teal text-white border-brand-teal' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-brand-teal'}`}
+                      >
+                        {habit}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>
@@ -717,6 +911,64 @@ const UserDashboard = () => {
       {selectedTab === 'nutrition' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">
           
+          {/* AI Diet Generator Widget */}
+          <div className="glass-card lg:col-span-12 border-brand-teal/30 bg-gradient-to-r from-brand-teal/5 to-transparent">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-brand-teal text-white p-2 rounded-lg shadow-md">
+                <Sparkles size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-800">AI Diet & Macro Generator</h3>
+                <p className="text-sm text-slate-500">Enter your weight and goal. Our AI will mathematically compute your optimal macros and generate a daily plan.</p>
+              </div>
+            </div>
+            
+            <form onSubmit={handleGenerateAIDietPlan} className="flex flex-wrap md:flex-nowrap gap-4 items-end bg-white/60 p-4 rounded-xl border border-slate-100 shadow-sm">
+              <div className="w-full md:w-1/3">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Current Weight (KG)</label>
+                <input 
+                  type="number" 
+                  step="0.1"
+                  required
+                  placeholder="e.g. 75"
+                  className="w-full border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:border-brand-teal focus:ring-brand-teal"
+                  value={aiCurrentWeight}
+                  onChange={(e) => setAiCurrentWeight(e.target.value)}
+                />
+              </div>
+              <div className="w-full md:w-1/3">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Fitness Goal</label>
+                <select 
+                  className="w-full border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:border-brand-teal focus:ring-brand-teal"
+                  value={aiGoal}
+                  onChange={(e) => setAiGoal(e.target.value)}
+                >
+                  <option value="lose">Weight Loss (Deficit)</option>
+                  <option value="maintain">Maintain Current Weight</option>
+                  <option value="gain">Muscle Gain (Surplus)</option>
+                </select>
+              </div>
+              <div className="w-full md:w-1/3">
+                <button 
+                  type="submit" 
+                  disabled={isGeneratingPlan}
+                  className="w-full premium-gradient text-white font-bold py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-70 flex items-center justify-center gap-2"
+                >
+                  {isGeneratingPlan ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={16} /> Generate Plan
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
           {/* Daily Tracker Rings */}
           <div className="glass-card lg:col-span-4">
             <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
@@ -729,11 +981,18 @@ const UserDashboard = () => {
                   <h1 className="text-4xl font-black text-brand-sky tracking-tighter">{tempWater}</h1>
                   <span className="text-sm font-medium text-slate-500">ml / {dailyLog?.waterGoal || 2500}</span>
                 </div>
-                {/* SVG Progress Circle would go here natively, simulating with a colored ring overlay */}
-                <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+                <svg viewBox="0 0 192 192" className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
                    <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-brand-sky/20" />
                    <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={`${Math.min(100, (tempWater / (dailyLog?.waterGoal || 2500)) * 100) * 5.5} 600`} className="text-brand-sky drop-shadow" strokeLinecap="round" />
                 </svg>
+              </div>
+              
+              <div className="w-full bg-slate-50 rounded-xl p-4 border border-slate-100 mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-slate-500 uppercase">Water Streak</p>
+                  <p className="text-sm font-medium text-slate-700">Hit target 3 days for a reward!</p>
+                </div>
+                <Award className={user.badges?.includes('Water Streak Master') ? 'text-brand-sky' : 'text-slate-300'} />
               </div>
               
               <div className="grid grid-cols-3 gap-2 w-full mb-4">
@@ -778,8 +1037,45 @@ const UserDashboard = () => {
               </div>
             </div>
 
+            {/* My Meal Plan */}
+            {mealPlans.length > 0 && (
+              <div className="mt-8 bg-brand-teal/5 rounded-2xl p-5 border border-brand-teal/20">
+                <h3 className="text-md font-bold text-brand-teal mb-4 flex items-center gap-2">
+                  <BookOpen size={18} /> Coach Assigned Meal Plan
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {['breakfast', 'lunch', 'dinner', 'snacks'].map(meal => (
+                    mealPlans[0].meals[meal] && mealPlans[0].meals[meal].length > 0 && (
+                      <div key={meal} className="bg-white rounded-xl p-3 border border-slate-100">
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{meal}</p>
+                        {mealPlans[0].meals[meal].map((m, i) => (
+                          <div key={i}>
+                            <p className="text-sm font-semibold text-slate-800">{m.name}</p>
+                            <p className="text-xs text-slate-500">{m.description}</p>
+                            <p className="text-[10px] font-mono text-slate-400 mt-1">{m.calories} cal | P: {m.protein}g | C: {m.carbs}g | F: {m.fat}g</p>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  ))}
+                  {mealPlans[0].detoxDrinks && mealPlans[0].detoxDrinks.length > 0 && (
+                      <div className="bg-white rounded-xl p-3 border border-slate-100">
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Detox Drinks</p>
+                        {mealPlans[0].detoxDrinks.map((m, i) => (
+                          <div key={i}>
+                            <p className="text-sm font-semibold text-slate-800">{m.name}</p>
+                            <p className="text-xs text-slate-500">{m.description}</p>
+                            <p className="text-[10px] font-mono text-brand-teal mt-1">{m.timeToConsume}</p>
+                          </div>
+                        ))}
+                      </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* List logged meals */}
-            <h4 className="text-sm font-bold text-slate-700 mb-3">Today's Log</h4>
+            <h4 className="text-sm font-bold text-slate-700 mt-8 mb-3">Today's Log</h4>
             <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -830,6 +1126,7 @@ const UserDashboard = () => {
                     <option value="lunch">Lunch</option>
                     <option value="dinner">Dinner</option>
                     <option value="snacks">Snacks</option>
+                    <option value="detoxDrinks">Detox Drinks</option>
                   </select>
                 </div>
                 <div>
@@ -896,9 +1193,34 @@ const UserDashboard = () => {
 
       {/* 3. WORKOUT VIDEO STREAMING */}
       {selectedTab === 'workouts' && (
-        <div className="animate-in fade-in duration-500">
-          <div className="flex space-x-2 overflow-x-auto pb-4 mb-2">
-            {['All', 'Fat Loss', 'Muscle Gain', 'Yoga & Breathing', 'Meditation'].map((cat) => (
+        <div className="animate-in fade-in duration-500 space-y-6">
+          {programs.length > 0 && (
+            <div className="glass-card bg-brand-teal/5 border-brand-teal/20">
+              <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                <Calendar size={20} className="text-brand-teal" />
+                Your Structured Program: {programs[0].title}
+              </h3>
+              <p className="text-xs text-slate-500 mb-4">{programs[0].category} - {programs[0].level} {programs[0].mode ? `(${programs[0].mode})` : ''}</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {programs[0].schedule.map((day, i) => (
+                  <div key={i} className={`p-4 rounded-xl border ${day.completed ? 'bg-brand-teal/10 border-brand-teal text-brand-teal' : 'bg-white border-slate-100'}`}>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-bold uppercase">Day {day.dayNumber}</span>
+                      {day.completed && <CheckCircle2 size={16} />}
+                    </div>
+                    <p className={`text-sm font-bold ${day.completed ? 'text-brand-teal' : 'text-slate-700'}`}>{day.title}</p>
+                    <p className="text-xs text-slate-500 mt-1">{day.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Video Library</h3>
+            <div className="flex space-x-2 overflow-x-auto pb-4 mb-2">
+              {['All', 'Fat Loss', 'Muscle Gain', 'Yoga & Breathing', 'Meditation'].map((cat) => (
               <button 
                 key={cat} 
                 onClick={() => setVideoCategory(cat)} 
@@ -950,6 +1272,7 @@ const UserDashboard = () => {
                 <p className="text-sm text-slate-500">Try selecting a different category.</p>
               </div>
             )}
+          </div>
           </div>
         </div>
       )}
@@ -1377,6 +1700,71 @@ const UserDashboard = () => {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. ECOSYSTEM STORE */}
+      {selectedTab === 'shop' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
+          {products.map(product => (
+            <div key={product._id} className="glass-card flex flex-col p-0 overflow-hidden group">
+              <div className="h-40 bg-slate-100 flex items-center justify-center p-6 relative">
+                <ShoppingBag size={48} className="text-slate-300 group-hover:text-brand-teal transition-colors" />
+                <span className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-600 uppercase tracking-wider shadow-sm">
+                  {product.type}
+                </span>
+              </div>
+              <div className="p-5 flex flex-col flex-grow">
+                <h3 className="text-lg font-bold text-slate-800 mb-2">{product.title}</h3>
+                <p className="text-sm text-slate-500 mb-4">{product.description}</p>
+                <div className="mt-auto flex justify-between items-center pt-4 border-t border-slate-100">
+                  <span className="text-xl font-black text-brand-teal">₹{product.price}</span>
+                  <button className="bg-slate-900 hover:bg-brand-teal text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                    Purchase
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {products.length === 0 && (
+             <div className="col-span-full text-center py-12 text-slate-500 glass-card">
+               Store is currently empty.
+             </div>
+          )}
+        </div>
+      )}
+
+      {/* Water Reminder Toast */}
+      {showWaterReminder && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-8 fade-in duration-500">
+          <div className="glass-card premium-gradient text-white p-5 shadow-2xl flex items-start gap-4 border border-white/20">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm">
+              <Droplet size={20} className="text-white fill-white/50" />
+            </div>
+            <div className="flex-1 pr-6">
+              <h4 className="text-sm font-bold tracking-wide mb-1 flex items-center gap-2">
+                <Bell size={14} className="animate-pulse" /> Hydration Reminder
+              </h4>
+              <p className="text-xs text-white/80 mb-3">
+                You're falling behind your {dailyLog?.waterGoal || 2500}ml goal. Time for a quick drink!
+              </p>
+              <button
+                onClick={() => {
+                  addWater(250);
+                  setShowWaterReminder(false);
+                }}
+                className="bg-white/20 hover:bg-white/30 backdrop-blur-md px-4 py-2 rounded-lg text-xs font-bold transition-colors w-full border border-white/10 text-center"
+              >
+                +250ml Log Now
+              </button>
+            </div>
+            <button
+              onClick={() => setShowWaterReminder(false)}
+              className="absolute top-3 right-3 text-white/50 hover:text-white transition-colors"
+            >
+              <X size={16} />
+            </button>
           </div>
         </div>
       )}
